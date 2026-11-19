@@ -1,2 +1,36 @@
 # screen-compare
-See how a smaller laptop screen would look, at true size, on the screen you have now.
+
+See any laptop or monitor at its real size, on the screen you are using now. Plain HTML and JavaScript, no build step, no dependencies, no tracking.
+
+**Live page:** https://screen-compare.notchup.fi
+
+![Screen compare drawing a gold outline of another screen at its real size](docs/screenshot.png)
+
+Early preview (v0.1). Sizes are worth checking with a ruler; details may still change.
+
+## Why this exists
+
+I needed to know how much smaller a 14 inch laptop screen would look next to my 16 inch one. Spec sheets only give inches, which are hard to picture, and a web page cannot ask the browser how big your screen really is. So this page asks for one number, the size of your screen in inches (or a bank card held against it), and draws the other screen at real size on top of yours.
+
+## How to use it
+
+1. Say how big your screen is. A detected laptop only needs a "That's right"; otherwise type the inches, or measure with a bank card.
+2. Pick the screen to compare with: 13 to 16 inch laptops, 24 to 34 inch monitors, any other size or a specific model.
+3. A gold outline shows it at real size, with its width and height. Hold a ruler to the screen to check, or fine-tune with a bank card.
+
+Everything runs in your browser. No cookies, no tracking. Your screens are remembered in this browser only if you ask, and never leave it. A comparison lives in the page's link, so you can share it.
+
+## Run it locally
+
+```sh
+./dev serve --open      # needs python3 (or Node.js); PowerShell: .\dev.ps1 serve -Open
+./dev check             # tests, plus a check that the page loads
+```
+
+Do not open `index.html` straight from disk: browsers block ES modules on `file://`. More commands, how the scale is worked out, how to add a screen preset, releases and deploys are in [docs/how-it-works.md](docs/how-it-works.md).
+
+## Licence
+
+MIT, see [LICENSE](LICENSE). This project does not take issues or pull requests; fork it freely. The Notchup name and the logo (`assets/mark.svg`) are © Notchup Oy, all rights reserved. They are not covered by the MIT licence, so replace them in a fork.
+
+Made by [Notchup](https://notchup.fi).

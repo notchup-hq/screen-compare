@@ -16,7 +16,7 @@
 //
 // Monitors are generic sizes only (diagonal and ratio are all that matter), so they need no upkeep.
 //
-// To add a preset, see "Adding a screen preset" in README.md.
+// To add a preset, see "Adding a screen preset" in docs/how-it-works.md.
 
 export const SCREENS = [
   {
