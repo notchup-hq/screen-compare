@@ -2,6 +2,12 @@
 
 All notable changes to this project are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Fixed
+
+- The bank card in Fine-tune is no longer cut off on small screens or high-density laptops: the drawer grows to fit the card at true size, a card wider than the window is drawn upright (with a note to hold it that way), and on a screen narrower than a card it is cut at the right edge so the top and bottom edges still line up. The slider now sits above the card, so it stays in reach on a phone.
+
 ## 0.1.0 – 2026-11-18
 
 Early preview.

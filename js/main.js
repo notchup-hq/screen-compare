@@ -327,6 +327,7 @@ function openDrawer(kind) {
     tuneTouched = false;
     skipRemember = false;
   }
+  drawer.classList.toggle('drawer-tune', tune);
   ui.drawerHeading.textContent = tune ? 'Check the real size with a card' : 'Details';
   ui.panelDetails.hidden = tune;
   ui.panelTune.hidden = !tune;
