@@ -4,11 +4,20 @@ The details behind [the README](../README.md): what each view does, how the scal
 
 ## The views
 
-The page opens with a headline, "See any screen at its real size", one line ("Pick a laptop or monitor size and see it true to scale, right on the screen you have now.") and one button, **Compare screens**; it never shows remembered data. The button opens a small dialog with two questions, one at a time. **How big is your screen?** is the size in inches, typed or stepped half an inch at a time with − and + (or the arrow keys, or the + and − keys; C clears the field) (a comma works as the decimal point; a detected laptop only needs a "That's right"; a bank card can measure it instead). **Compare with which screen?** is four big buttons (13", 14", 15", 16" laptops, or 24", 27", 32", 34" monitors when your screen is a monitor), or any other size or a specific model (the one you used last wins); a tap goes straight to the result. The resolution and aspect ratios are in Details. The result then dims the page and draws the other screen as a crisp gold outline at its real physical size, centred, with its width and height in centimetres on two edges and one chip, for example "14" is 85 % of your screen's area". Sample content (a mock desktop at the screen's default scaling) is off by default and, when you turn it on, stays clipped inside the outline.
+**Start.** A headline, "See any screen at its real size", one line, a small illustration and one button, **Compare screens**. A closed "What is this?" says why you would use it. The start view never shows remembered data, and on a phone it fits without scrolling. Without JavaScript the page shows a short explanation instead of the button.
 
-The slim toolbar shows "your screen vs the other" (both open the dialog again), the Sample content switch, **Fine-tune** and **Details**. Details (the numbers, a to-scale overview and how accurate this is) and the bank-card fine-tune open in a drawer from the right and are closed by default. The outline is always drawn whole: if it does not fit the free space below the toolbar, the page says so, shows both screens to scale and offers **Full screen**. If the other screen is bigger than yours, Full screen shows your screen's edges and how far the bigger one reaches past each side.
+**Setup**, a small dialog with two questions, one at a time:
 
-Motion is CSS only (the illustration on the start view shrinks and grows gently). With `prefers-reduced-motion: reduce` there is no animation and the end state shows at once. Without JavaScript the page shows a short explanation instead of the button.
+1. **How big is your screen?** A detected laptop shows as one line ("MacBook Air 13"") with **That's right** and **No, change it**. Otherwise there is one number field in inches (4 to 100, a comma works as the decimal point), with − and + (also the arrow keys and the + and − keys; C clears the field) stepping half an inch from a suggested size: 24, or 6.1 on a phone and 11 on a tablet. **Next** says what is missing if the field is empty. Other ways to answer: **Pick your laptop model** (after "No, change it"), **Pick your phone model** (on a phone, from the start) or **Measure with a card**. A remembered screen is shown here to confirm, with Measure again and Forget this screen (with Undo).
+2. **Compare with which screen?** Four big buttons, each drawn to scale, of your own kind: phones (5.4, 6.1, 6.5, 6.9"), tablets (8.3, 11, 12.4, 13"), laptops (13, 14, 15, 16") or monitors (24, 27, 32, 34" wide). **Show all sizes** adds the other kinds. **Other size or a specific model** reveals a size field and a model list; whichever you changed last is used. A tap goes straight to the result.
+
+Each question has a closed hint ("Why do you ask?", "How accurate is this?").
+
+**Result.** The page dims and draws the other screen as a gold outline at its real size, centred, with its width and height in centimetres and one chip ("14" is 85 % of your screen's area"). Phones and tablets are drawn the way you hold your own screen. The slim toolbar shows "your screen vs the other" (both open the setup again), Sample content (a mock desktop at the screen's default scaling, off by default), Full screen, Drawing only, Start over, **Fine-tune** and **Details**; under 768 px these sit in one Options menu. Details (the numbers, the resolution, the aspect ratios, a to-scale overview, remembered screens) and Fine-tune open in a drawer. The outline is always drawn whole: if it does not fit, the page shows both screens to scale and offers Full screen, which for a bigger screen shows how far it reaches past each of your edges.
+
+**Fine-tune** is a fitting screen: lay a card on the drawn card (or a ruler on the drawn scale), adjust with − slider + until they match, and press **Set**. More options holds the choice of card, ruler in cm or ruler in inches (10 cm or 4 in where it fits, 5 cm or 2 in on a phone), Remember and Reset.
+
+Motion is CSS only and is skipped with `prefers-reduced-motion: reduce`.
 
 ## Privacy and remembered screens
 
@@ -18,9 +27,9 @@ Your choices are kept in the page's link, so you can share a comparison. No cook
 
 Browsers do not know a screen's physical size (a CSS inch is 96 CSS px, not a real inch). They do report the resolution and `devicePixelRatio`, so the one missing number is the diagonal, and the page gets it one of three ways, strongest first:
 
-1. **A card.** Bank, ID, driving licence, loyalty and library cards share one size (ISO/IEC 7810 ID-1). "Don't know the size? Measure with a card" (or Fine-tune in the result) lets you drag a slider until an on-screen card (85.60 × 54 mm) matches a real one. That sets the scale directly and is saved in the link as `cal`.
-2. **A typed size.** The diagonal in inches, from 10 to 100, for example 21.5 (decimals are fine, comma or dot; curved screens use the size the maker quotes). Saved as `size=21.5`.
-3. **A laptop model.** "Pick a model…", or the model the page recognised from your resolution. Its panel size is used.
+1. **A card or a ruler.** Bank, ID, driving licence, loyalty and library cards share one size (ISO/IEC 7810 ID-1, 85.60 × 53.98 mm). "Don't know? Measure with a card" (or Fine-tune in the result) lets you adjust an on-screen card, or a ruler scale, until it matches the real one, then press Set. That sets the scale directly and is saved in the link as `cal`.
+2. **A typed size.** The diagonal in inches, from 4 to 100, for example 21.5 (decimals are fine, comma or dot; curved screens use the size the maker quotes). Saved as `size=21.5`.
+3. **A model.** A laptop the page recognised from your resolution, or a laptop or phone model you picked. Its panel size is used.
 
 With the size and the native resolution the scale is exact:
 
@@ -36,7 +45,7 @@ Limits:
 
 - A model is only right on that laptop's **built-in screen**. For a typed size or a card, any screen works. Use the card whenever in doubt; it needs nothing else.
 - The "Approximate" labels (browser zoom is not 100 %, or the screen does not look like the model you picked) only appear when the size came from a model, because that is the only case where the page can tell.
-- Presets use the real panel size (a 16" MacBook Pro is 16.2", 3456 × 2234), not the marketing size. Monitors are generic sizes only (diagonal and ratio are all that matter), so there is no monitor list to keep up to date.
+- Presets use the real panel size (a 16" MacBook Pro is 16.2", 3456 × 2234), not the marketing size. Monitors and tablets are generic sizes only (diagonal and ratio are all that matter), so there is no list of them to keep up to date. Phone models use the size measured as a rectangle where the maker gives it.
 
 The link carries `size` (with `res` or `ratio` only when needed) or `from` (a model), plus `to`, `cal` if you used a card (it wins over the rest) and, if you turn sample content on, `fill=1`. Older links with `from=c-16.0-16x10` still open (as a typed 16" size).
 

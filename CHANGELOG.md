@@ -2,6 +2,12 @@
 
 All notable changes to this project are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
+## Unreleased
+
+### Changed
+
+- `AGENTS.md` is a short set of rules; the detailed behaviour of each view lives in `docs/how-it-works.md`, now up to date with phones, tablets, card and ruler.
+
 ## 0.2.0 – 2026-11-19
 
 Phones and tablets.
