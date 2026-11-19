@@ -109,6 +109,15 @@ select { width: 100%; }
 .brand { display: inline-flex; align-items: center; gap: 0.6rem; }
 .logo { display: block; line-height: 0; border-radius: 4px; }
 .logo img { display: block; width: 28px; height: 28px; }
+/* The company site's soft golden glow (static, no script): on hover where a pointer really hovers, and on keyboard focus. */
+.logo img { filter: drop-shadow(0 0 0 rgba(212, 175, 55, 0)); }
+.logo:focus-visible img { filter: drop-shadow(0 0 18px rgba(212, 175, 55, 0.25)); }
+@media (hover: hover) {
+  .logo:hover img { filter: drop-shadow(0 0 18px rgba(212, 175, 55, 0.25)); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .logo img { transition: filter 0.6s ease; }
+}
 .app-name { font-weight: 650; color: var(--brand-cream); }
 .logo:focus-visible, .toolbar button:focus-visible, .toolbar input:focus-visible { outline-color: #64ffda; }
 /* Preview label: a quiet gold outline. Remove it when the project reaches 1.0. */
@@ -326,6 +335,10 @@ select { width: 100%; }
   .site-footer > * { white-space: nowrap; }
 }
 .site-footer a { color: var(--muted); }
+/* The source link and the version stay together as one item. */
+.site-footer .meta { display: inline-flex; align-items: center; gap: 0.75rem; }
+.site-footer .gh { display: inline-flex; align-items: center; }
+.site-footer .gh:hover { color: var(--ink); }
 
 /* 2. Setup: a native dialog with two questions. One heading, one main action and at most one link per step. */
 .dialog {
