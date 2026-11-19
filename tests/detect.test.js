@@ -20,9 +20,17 @@ test('portrait is swapped to landscape', () => {
   assert.deepEqual(matchScreens(1117, 1728, 2), { native: [3456, 2234], matches: ['mbp16'] });
 });
 
-test('several presets share a resolution', () => {
-  assert.deepEqual(matchScreens(1280, 800, 2).matches, ['g133', 'g14', 'g16']);
-  assert.deepEqual(matchScreens(1920, 1080, 1).matches, ['g156', 'g173']);
+test('generic sizes and monitors are never detected', () => {
+  assert.deepEqual(matchScreens(1280, 800, 2).matches, []); // a generic 14" laptop panel
+  assert.deepEqual(matchScreens(1920, 1080, 1).matches, []); // a 21.5" to 24" monitor
+  assert.deepEqual(matchScreens(2560, 1440, 1).matches, []);
+});
+
+test('scaled looks-like sizes are not a match', () => {
+  // MacBook Air 13 at its default scaling, and the same panel in "More space" (the Air 15's default).
+  assert.deepEqual(matchScreens(1470, 956, 2).matches, []);
+  assert.deepEqual(matchScreens(1710, 1107, 2).matches, []);
+  assert.deepEqual(matchScreens(1280, 832, 2).matches, ['mba13']); // its native 2560 x 1664
 });
 
 test('no match returns the native size and no ids', () => {

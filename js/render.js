@@ -6,7 +6,6 @@
 
 import { fitsBox, fitsInside, formatCm, overflowPerSide } from './geometry.js';
 import { sizeLabel } from './intro.js';
-import { ACCURACY_TEXT } from './accuracy.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -89,14 +88,14 @@ function chipText(from, to, pct) {
     : `${sizeLabel(to)} is ${pct} % of your screen's area`;
 }
 
-/** The area chip with the accuracy line under it. "Check with a card" only when the size is just assumed. */
-function chipStack(from, to, pct, { accuracy, onCheckCard }) {
+/** The area chip with the accuracy line under it. "Check with a card" whenever the size is not measured with one. */
+function chipStack(from, to, pct, { accuracy, accuracyLabel, onCheckCard }) {
   const stack = el('div', 'chip-stack');
   const chip = el('p', 'chip', chipText(from, to, pct));
   chip.setAttribute('aria-hidden', 'true');
   const line = el('p', `accuracy acc-${accuracy}`);
-  line.append(el('span', '', ACCURACY_TEXT[accuracy]));
-  if (accuracy === 'assumed') {
+  line.append(el('span', '', accuracyLabel));
+  if (accuracy !== 'card') {
     const b = el('button', 'link-btn', 'Check with a card');
     b.type = 'button';
     b.addEventListener('click', onCheckCard);
@@ -129,7 +128,7 @@ function card({ title, text, from, to, canFullscreen, onFullscreen, inFullscreen
   return c;
 }
 
-/** Draw (or redraw) the stage. `args` = { from, to, scale, fill, pct, accuracy, onCheckCard, canFullscreen, onFullscreen }. */
+/** Draw (or redraw) the stage. `args` = { from, to, scale, fill, pct, accuracy, accuracyLabel, onCheckCard, canFullscreen, onFullscreen }. */
 export function draw(args) {
   last = args;
   const stage = document.getElementById('stage');
