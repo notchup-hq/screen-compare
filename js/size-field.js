@@ -52,6 +52,16 @@ export function stepSize(current, dir, start = 24) {
 }
 
 /**
+ * The size to suggest (the placeholder, and where − and + start) for a screen whose short side is `short`
+ * CSS px: a phone or a tablet (a touch screen) starts near its own size, anything else at a 24" monitor.
+ */
+export function typicalSize({ short, coarse }) {
+  if (coarse && short < 500) return 6.1;
+  if (coarse && short < 1100) return 11;
+  return 24;
+}
+
+/**
  * Wire `input` with its − and + buttons. The buttons and the step keys (see stepDirection) write the new value and fire
  * an `input` event, so the owner's own handler runs as if it was typed. Returns `sync()`, which refreshes
  * the spinbutton's aria values; call it after setting `input.value` from code.

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanSizeText, isClearKey, parseSize, stepDirection, stepSize } from '../js/size-field.js';
+import { cleanSizeText, isClearKey, parseSize, stepDirection, stepSize, typicalSize } from '../js/size-field.js';
 
 test('parseSize accepts a dot or a comma and rejects the rest', () => {
   assert.equal(parseSize('15,6'), 15.6);
@@ -30,14 +30,15 @@ test('stepSize moves to the next half inch in that direction', () => {
   assert.equal(stepSize(21.5, 1), 22);
 });
 
-test('stepSize clamps to 10-100', () => {
+test('stepSize clamps to 4-100', () => {
   assert.equal(stepSize(100, 1), 100);
   assert.equal(stepSize(99.8, 1), 100);
   assert.equal(stepSize(150, -1), 100);
-  assert.equal(stepSize(10, -1), 10);
-  assert.equal(stepSize(10.2, -1), 10);
-  assert.equal(stepSize(5, 1), 10);
-  assert.equal(stepSize(null, -1, 10), 10);
+  assert.equal(stepSize(4, -1), 4);
+  assert.equal(stepSize(4.2, -1), 4);
+  assert.equal(stepSize(2, 1), 4);
+  assert.equal(stepSize(null, -1, 4), 4);
+  assert.equal(stepSize(null, 1, 6.1), 6.5);
 });
 
 test('cleanSizeText keeps digits and one decimal separator only', () => {
@@ -60,4 +61,11 @@ test('only C clears the size field', () => {
   assert.equal(isClearKey('c'), true);
   assert.equal(isClearKey('C'), true);
   for (const key of ['x', 'Delete', 'Backspace', 'Escape', '1', undefined]) assert.equal(isClearKey(key), false, String(key));
+});
+
+test('typicalSize suggests a phone, tablet or monitor size', () => {
+  assert.equal(typicalSize({ short: 390, coarse: true }), 6.1);
+  assert.equal(typicalSize({ short: 820, coarse: true }), 11);
+  assert.equal(typicalSize({ short: 390, coarse: false }), 24, 'a narrow desktop window is not a phone');
+  assert.equal(typicalSize({ short: 1080, coarse: false }), 24);
 });

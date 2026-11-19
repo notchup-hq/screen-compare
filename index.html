@@ -82,13 +82,17 @@
         <span>vs</span>
         <button type="button" class="screen-btn" id="to-btn" aria-haspopup="dialog"></button>
       </div>
-      <label class="switch"><input type="checkbox" role="switch" id="fill"><span>Sample content</span></label>
-      <div class="tools">
-        <button type="button" id="fullscreen-btn" hidden>Full screen</button>
-        <button type="button" id="drawing-btn" aria-pressed="false">Drawing only</button>
-        <button type="button" id="start-over-btn">Start over</button>
-        <button type="button" id="tune-btn" aria-haspopup="dialog">Fine-tune<span class="dot" id="tune-dot" hidden></span><span class="visually-hidden" id="tune-state"></span></button>
-        <button type="button" id="details-btn" aria-haspopup="dialog">Details</button>
+      <!-- On a small screen the options sit behind one Options button; from 768 px they show inline. -->
+      <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="options"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="menu-label">Options</span></button>
+      <div class="options" id="options">
+        <label class="switch"><input type="checkbox" role="switch" id="fill"><span>Sample content</span></label>
+        <div class="tools">
+          <button type="button" id="fullscreen-btn" hidden>Full screen</button>
+          <button type="button" id="drawing-btn" aria-pressed="false">Drawing only</button>
+          <button type="button" id="start-over-btn">Start over</button>
+          <button type="button" id="tune-btn" aria-haspopup="dialog">Fine-tune<span class="dot" id="tune-dot" hidden></span><span class="visually-hidden" id="tune-state"></span></button>
+          <button type="button" id="details-btn" aria-haspopup="dialog">Details</button>
+        </div>
       </div>
     </header>
     <main class="stage-wrap">
@@ -141,7 +145,7 @@
           <details class="hint">
             <summary>Why do you ask?</summary>
             <p>Your browser knows how many pixels your screen has, but not how big it is in centimetres. With the size in inches we can work out the real scale. A 24" monitor and a 27" monitor can both be 1920 × 1080, so the pixels alone can't tell them apart.</p>
-            <p><strong>Where to find it:</strong> the box, the sticker on the back or under the stand, the receipt, or the maker's spec page. Laptops: the model name is usually on the bottom. Curved screens: use the size the maker quotes.</p>
+            <p><strong>Where to find it:</strong> the box, the sticker on the back or under the stand, the receipt, or the maker's spec page. Laptops: the model name is usually on the bottom. Phones and tablets: Settings, then About, or the maker's spec page. Curved screens: use the size the maker quotes.</p>
             <p><strong>Not sure?</strong> Measure with a bank card: every bank card is the same size (8.56 × 5.4 cm), so you can match one on screen and we take the scale from that.</p>
           </details>
           <button type="button" class="primary" id="size-next">Next</button>

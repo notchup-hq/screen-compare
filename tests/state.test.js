@@ -34,9 +34,10 @@ test('ratio is only kept when there is a size and no usable resolution', () => {
   assert.equal(parseState('?size=24&ratio=bogus&to=mbp14', defaults).ratio, null);
 });
 
-test('a size must be 10 to 100 inches and a res must be a believable panel', () => {
-  assert.equal(parseState('?size=9.9', defaults).size, null);
-  assert.equal(parseState('?size=9', defaults).size, null);
+test('a size must be 4 to 100 inches and a res must be a believable panel', () => {
+  assert.equal(parseState('?size=3.9', defaults).size, null);
+  assert.equal(parseState('?size=3', defaults).size, null);
+  assert.equal(parseState('?size=6.1', defaults).size, 6.1);
   assert.equal(parseState('?size=100.1', defaults).size, null);
   assert.equal(parseState('?size=100', defaults).size, 100);
   assert.equal(parseState('?size=10', defaults).size, 10);
@@ -71,7 +72,8 @@ test('custom screen', () => {
   assert.equal(resolveScreen('c-16.0-bogus'), null);
   assert.equal(resolveScreen('c-34.0-21x9').ratioId, '21x9');
   assert.ok(resolveScreen('c-99.0-16x10'));
-  assert.equal(resolveScreen('c-6.0-16x10'), null);
+  assert.ok(resolveScreen('c-6.0-16x10'));
+  assert.equal(resolveScreen('c-3.0-16x10'), null);
 });
 
 test('sample content is off by default and on only with fill=1', () => {

@@ -48,7 +48,7 @@ test('another size typed in the second question becomes a preset or a custom siz
   assert.equal(otherSizeSpec(22, 'laptop'), 'c-22.0-16x10');
   assert.equal(otherSizeSpec(22, 'monitor'), 'c-22.0-16x9');
   assert.equal(otherSizeSpec(15.64, 'laptop'), 'c-15.6-16x10');
-  assert.equal(otherSizeSpec(9.9, 'laptop'), null);
+  assert.equal(otherSizeSpec(3.9, 'laptop'), null);
   assert.equal(otherSizeSpec(100.1, 'monitor'), null);
   assert.equal(otherSizeSpec(100, 'monitor'), 'c-100.0-16x9');
   assert.ok(resolveScreen('c-100.0-16x9'));
@@ -104,7 +104,7 @@ test('other size label shows the rounded size the outline uses', () => {
 });
 
 test('other size out of range or not a number has no spec and stays the used one', () => {
-  for (const sizeText of ['5', '500', 'abc']) {
+  for (const sizeText of ['3', '500', 'abc']) {
     const c = otherChoice({ kind: 'laptop', active: 'size', sizeText, modelId: 'mbp14' });
     assert.deepEqual(c, { use: 'size', spec: null, label: 'Show' }, sizeText);
   }

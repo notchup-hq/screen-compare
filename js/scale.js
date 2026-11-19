@@ -13,7 +13,8 @@ import { MM_PER_INCH, pxPerMm, sizeFromDiagonal } from './geometry.js';
 const MIN_RATIO = 1;
 const MAX_RATIO = 4;
 
-export const SIZE_MIN_IN = 10;
+// From 4 inches, so a phone (about 5 to 7 inches) or a tablet can say how big it is.
+export const SIZE_MIN_IN = 4;
 export const SIZE_MAX_IN = 100;
 
 /** CSS pixels per mm when 1 CSS px is 1/96 inch: what we assume when nothing is known yet. */
@@ -58,31 +59,42 @@ export function yourScreen({ preset = null, sizeIn = null, res = null, ratio = n
     };
   }
 
-  if (validSize(sizeIn)) {
-    const edited = res && usableResolution(res[0], res[1]) ? res : null;
-    const native = css.width > 0 && css.height > 0 ? [Math.round(css.width * dpr), Math.round(css.height * dpr)] : null;
-    const label = `${sizeIn}"`;
-    const base = { basis: 'size', id: `size-${sizeIn}`, name: `${label} screen`, short: `${label} screen`, diagonalIn: sizeIn, custom: true };
-    if (edited) {
-      // An edited resolution is native pixels, so the device pixel ratio matters here.
-      const [long, short] = edited[0] >= edited[1] ? edited : [edited[1], edited[0]];
-      const r = long / short;
-      return { ...base, ...sizeFromDiagonal(sizeIn, r), ratio: r, res: [long, short], pxPerMm: Math.hypot(long, short) / dpr / (sizeIn * MM_PER_INCH) };
-    }
-    if (native && usableResolution(css.width, css.height)) {
-      // CSS size x dpr is the native size, so dpr cancels: the CSS diagonal over the real diagonal.
-      const long = Math.max(css.width, css.height);
-      const short = Math.min(css.width, css.height);
-      const r = long / short;
-      const [nl, ns] = native[0] >= native[1] ? native : [native[1], native[0]];
-      return { ...base, ...sizeFromDiagonal(sizeIn, r), ratio: r, res: [nl, ns], pxPerMm: Math.hypot(long, short) / (sizeIn * MM_PER_INCH) };
-    }
-    // No usable resolution: the aspect ratio has to come from the visitor.
-    if (!(ratio >= MIN_RATIO && ratio <= MAX_RATIO) || !(Math.max(css.width, css.height) > 0)) return null;
-    const dims = sizeFromDiagonal(sizeIn, ratio);
-    return { ...base, ...dims, ratio, pxPerMm: pxPerMm(Math.max(css.width, css.height), dims.widthMm) };
-  }
+  if (validSize(sizeIn)) return upright(sizedScreen({ sizeIn, res, ratio, css, dpr }), css);
 
   if (preset) return { ...preset, basis: 'model', pxPerMm: pxPerMm(css.width, preset.widthMm) };
   return null;
+}
+
+/**
+ * A typed size gives the panel's long and short side; a phone or tablet held upright shows them the other
+ * way round. Turn the size to match the screen as the browser reports it now, as a card measurement does.
+ */
+function upright(you, css) {
+  if (!you || !(css.height > css.width)) return you;
+  return { ...you, widthMm: you.heightMm, heightMm: you.widthMm };
+}
+
+function sizedScreen({ sizeIn, res, ratio, css, dpr }) {
+  const edited = res && usableResolution(res[0], res[1]) ? res : null;
+  const native = css.width > 0 && css.height > 0 ? [Math.round(css.width * dpr), Math.round(css.height * dpr)] : null;
+  const label = `${sizeIn}"`;
+  const base = { basis: 'size', id: `size-${sizeIn}`, name: `${label} screen`, short: `${label} screen`, diagonalIn: sizeIn, custom: true };
+  if (edited) {
+    // An edited resolution is native pixels, so the device pixel ratio matters here.
+    const [long, short] = edited[0] >= edited[1] ? edited : [edited[1], edited[0]];
+    const r = long / short;
+    return { ...base, ...sizeFromDiagonal(sizeIn, r), ratio: r, res: [long, short], pxPerMm: Math.hypot(long, short) / dpr / (sizeIn * MM_PER_INCH) };
+  }
+  if (native && usableResolution(css.width, css.height)) {
+    // CSS size x dpr is the native size, so dpr cancels: the CSS diagonal over the real diagonal.
+    const long = Math.max(css.width, css.height);
+    const short = Math.min(css.width, css.height);
+    const r = long / short;
+    const [nl, ns] = native[0] >= native[1] ? native : [native[1], native[0]];
+    return { ...base, ...sizeFromDiagonal(sizeIn, r), ratio: r, res: [nl, ns], pxPerMm: Math.hypot(long, short) / (sizeIn * MM_PER_INCH) };
+  }
+  // No usable resolution: the aspect ratio has to come from the visitor.
+  if (!(ratio >= MIN_RATIO && ratio <= MAX_RATIO) || !(Math.max(css.width, css.height) > 0)) return null;
+  const dims = sizeFromDiagonal(sizeIn, ratio);
+  return { ...base, ...dims, ratio, pxPerMm: pxPerMm(Math.max(css.width, css.height), dims.widthMm) };
 }
