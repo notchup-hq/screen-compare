@@ -2,7 +2,9 @@
 
 All notable changes to this project are listed here, newest first. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project uses [Semantic Versioning](https://semver.org/).
 
-## Unreleased
+## 0.2.0 – 2026-11-19
+
+Phones and tablets.
 
 ### Added
 
@@ -20,7 +22,7 @@ All notable changes to this project are listed here, newest first. The format fo
 - Step 1's Next is no longer greyed out while the size field is empty: the grey example size next to a disabled button read as "that size is not allowed". Next now says what is missing.
 - "Bank card" is now just "card": any bank, ID, driving licence, loyalty or library card has the same size, so people who pay by phone can measure too.
 - A typed size on a phone or tablet held upright was drawn sideways, so "how far it reaches past each edge" was wrong; it now follows the screen's orientation like a card measurement.
-- The bank card in Fine-tune is no longer cut off on small screens or high-density laptops: the drawer grows to fit the card at true size, a card wider than the window is drawn upright (with a note to hold it that way), and on a screen narrower than a card it is cut at the right edge so the top and bottom edges still line up. The slider now sits above the card, so it stays in reach on a phone.
+- The card in Fine-tune is no longer cut off on small screens or high-density laptops: the drawer grows to fit the card at true size, a card wider than the window is drawn upright (with a note to hold it that way), and on a screen narrower than a card it is cut at the right edge so the top and bottom edges still line up.
 
 ## 0.1.0 – 2026-11-18
 
