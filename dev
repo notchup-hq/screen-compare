@@ -24,8 +24,13 @@ Commands:
                             on all interfaces, so the page is visible on your network).
                             --open opens the browser (open, xdg-open, or wslview / cmd.exe on WSL).
   test [--watch]            Run node --test tests/*.test.js (--watch needs Node 18.11+).
-  screenshot                Regenerate docs/screenshot.png with Playwright (via npx, on demand).
-  check                     Run the tests, then fetch index.html, the CSS and every JS module
+  screenshot [options]      Regenerate docs/screenshot.png with Playwright (via npx, on demand).
+                            --width N   viewport width, 16:10 (repeatable; default 1728)
+                            --query Q   page query (default '?from=mbp16&to=mbp14')
+                            --out DIR   output directory (default docs)
+                            --name X    file name prefix (default screenshot; files are X-<width>.png)
+                            --wait MS   wait after load, to catch the intro mid-way (default 500)
+  check                     Run the tests (including the privacy scan), then fetch index.html, the CSS and every JS module
                             over HTTP and check they load (JS must be served as JavaScript).
 EOF
 }
@@ -164,16 +169,50 @@ cmd_test() {
 }
 
 cmd_screenshot() {
-  [ $# -eq 0 ] || die_usage "Unknown option for screenshot: $1"
+  local widths=() query="?from=mbp16&to=mbp14" out="docs" name="screenshot" wait=500
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --width)
+        [ $# -ge 2 ] || die_usage "--width needs a number."
+        case "$2" in ''|*[!0-9]*) die_usage "Invalid width: $2" ;; esac
+        widths+=("$2"); shift 2 ;;
+      --query)
+        [ $# -ge 2 ] || die_usage "--query needs a value such as '?from=mbp16'."
+        query=$2; shift 2 ;;
+      --out)
+        [ $# -ge 2 ] || die_usage "--out needs a directory."
+        out=$2; shift 2 ;;
+      --name)
+        [ $# -ge 2 ] || die_usage "--name needs a file name prefix."
+        name=$2; shift 2 ;;
+      --wait)
+        [ $# -ge 2 ] || die_usage "--wait needs milliseconds."
+        case "$2" in ''|*[!0-9]*) die_usage "Invalid wait: $2" ;; esac
+        wait=$2; shift 2 ;;
+      *) die_usage "Unknown option for screenshot: $1" ;;
+    esac
+  done
+  # No --width: one shot at 1728 wide, the default scaled width of a 16" MacBook Pro, as docs/screenshot.png.
+  local single=0
+  if [ ${#widths[@]} -eq 0 ]; then widths=(1728); single=1; fi
+
   need npx "needed to run Playwright on demand" "Install Node.js, which includes npx."
   start_bg_server "$TEST_PORT"
-  mkdir -p docs
+  mkdir -p "$out"
   npx --yes "playwright@$PLAYWRIGHT_VERSION" install chromium
-  # 1728x1117 is the default scaled size of a 16" MacBook Pro screen.
-  npx --yes "playwright@$PLAYWRIGHT_VERSION" screenshot \
-    --viewport-size=1728,1117 --wait-for-timeout=500 \
-    "http://127.0.0.1:$TEST_PORT/?from=mbp16&to=mbp14" docs/screenshot.png
-  echo "✅ Wrote docs/screenshot.png"
+  local w h file
+  for w in "${widths[@]}"; do
+    h=$((w * 10 / 16))   # 16:10, like the laptops it compares
+    if [ "$single" -eq 1 ] && [ "$out" = "docs" ] && [ "$name" = "screenshot" ]; then
+      file="$out/$name.png"
+    else
+      file="$out/$name-$w.png"
+    fi
+    npx --yes "playwright@$PLAYWRIGHT_VERSION" screenshot \
+      --viewport-size="$w,$h" --wait-for-timeout="$wait" \
+      "http://127.0.0.1:$TEST_PORT/$query" "$file"
+    echo "✅ Wrote $file (${w}x${h}, after ${wait} ms)"
+  done
 }
 
 cmd_check() {

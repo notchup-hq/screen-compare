@@ -3,58 +3,131 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1a2b">
   <title>Screen compare: see a laptop screen at true size</title>
   <meta name="description" content="See how a smaller laptop screen would look, at true size, on the screen you have now.">
+  <link rel="icon" href="assets/mark.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
   <script type="module" src="js/main.js"></script>
 </head>
-<body>
-  <div id="stage" class="stage" aria-hidden="true"></div>
-  <button type="button" id="drawing-toggle" class="drawing-toggle" aria-pressed="false">Show drawing only</button>
+<body data-view="start">
 
-  <div class="page" id="page">
-    <header class="masthead">
-      <h1>Screen compare</h1>
-      <p>See how a smaller laptop screen would look, at true size, on the screen you have now.</p>
+  <!-- 1. Start: one question, one button. -->
+  <main class="start" id="start">
+    <div class="brand">
+      <a class="logo" href="https://notchup.fi"><img src="assets/mark.svg" alt="Notchup" width="28" height="28"></a>
+      <span class="app-name">Screen compare</span>
+      <span class="badge">Preview</span>
+    </div>
+    <h1>Thinking of a smaller laptop?</h1>
+    <p class="lede">See it at real size, right on the screen you have now.</p>
+
+    <svg class="art" viewBox="0 0 320 230" role="img" aria-label="A laptop screen with a smaller gold outline shrinking inside it, labelled 16 inch to 14 inch.">
+      <rect class="art-screen" x="20" y="8" width="280" height="175" rx="10"/>
+      <path class="art-base" d="M6 192h308l-14 10H20z"/>
+      <g class="art-inner">
+        <rect x="20" y="8" width="280" height="175" rx="6"/>
+      </g>
+      <text class="art-label" x="160" y="226" text-anchor="middle">16" → 14"</text>
+    </svg>
+
+    <button type="button" class="primary" id="start-btn">Compare my screen</button>
+    <noscript>
+      <p class="no-js">This page needs JavaScript to measure and draw screens. You say which laptop you have and which smaller one you are considering, and it draws the smaller screen as an outline at its real physical size on your screen. Nothing is stored and nothing leaves your browser, with or without JavaScript.</p>
+    </noscript>
+  </main>
+
+  <!-- 3. Result: the outline is the hero. -->
+  <div class="result" id="result" hidden>
+    <header class="toolbar" id="toolbar">
+      <div class="brand">
+        <a class="logo" href="https://notchup.fi"><img src="assets/mark.svg" alt="Notchup" width="28" height="28"></a>
+      <span class="app-name">Screen compare</span>
+        <span class="badge">Preview</span>
+      </div>
+      <div class="pair">
+        <button type="button" class="screen-btn" id="from-btn" aria-haspopup="dialog"></button>
+        <span>vs</span>
+        <button type="button" class="screen-btn" id="to-btn" aria-haspopup="dialog"></button>
+        <button type="button" id="swap-btn" class="icon-btn" aria-label="Swap the two screens" title="Swap the two screens"><span aria-hidden="true">⇄</span></button>
+      </div>
+      <label class="switch"><input type="checkbox" role="switch" id="fill"><span>Sample content</span></label>
+      <div class="tools">
+        <button type="button" id="tune-btn" aria-haspopup="dialog">Fine-tune<span class="dot" id="tune-dot" hidden></span><span class="visually-hidden" id="tune-state"></span></button>
+        <button type="button" id="details-btn" aria-haspopup="dialog">Details</button>
+      </div>
     </header>
+    <main class="stage-wrap">
+      <div class="stage" id="stage"></div>
+      <p class="visually-hidden" id="live" aria-live="polite"></p>
+      <button type="button" class="exit-fs" id="exit-fs" hidden>Exit full screen</button>
+    </main>
+  </div>
 
-    <main>
-      <section class="panel" aria-labelledby="pick-h">
-        <h2 id="pick-h" class="visually-hidden">Choose screens</h2>
-        <div class="picker" data-role="from" data-label="Your screen"></div>
-        <div class="picker" data-role="to" data-label="Compare with"></div>
-        <noscript><p>This page needs JavaScript to measure and draw screens.</p></noscript>
-      </section>
+  <footer class="site-footer">
+    <a href="https://notchup.fi">Made by Notchup · Knock it up a notch!</a>
+    <a href="https://github.com/notchup-hq/screen-compare">Source on GitHub</a>
+    <span>MIT licence</span>
+    <a id="version" href="https://github.com/notchup-hq/screen-compare/blob/main/CHANGELOG.md">Changelog</a>
+  </footer>
 
-      <section class="panel" aria-labelledby="result-h">
-        <h2 id="result-h">Result</h2>
-        <div id="result" aria-live="polite"></div>
-        <div id="overview" class="overview"></div>
-        <label class="check">
-          <input type="checkbox" id="fill">
-          <span>Fill the outline with sample content at the screen's default scaling</span>
-        </label>
-      </section>
+  <!-- 2. Setup: two steps on one screen. Plain controls; no form element, nothing is submitted. -->
+  <dialog class="dialog" id="setup" aria-labelledby="setup-h">
+    <div class="dialog-body">
+      <h2 id="setup-h">Compare screens</h2>
 
-      <section class="panel" aria-labelledby="cal-h">
-        <details id="calibrate">
-          <summary id="cal-h">Fine-tune with a bank card</summary>
-          <div id="cal-body"></div>
-        </details>
-      </section>
+      <div class="field">
+        <label for="from-select">Your screen</label>
+        <select id="from-select" aria-describedby="from-note"></select>
+        <div class="other" id="from-other" hidden>
+          <label for="from-diag">Diagonal in inches</label>
+          <input type="number" id="from-diag" inputmode="decimal" min="5" max="30" step="0.1" value="16">
+          <fieldset class="pills">
+            <legend>Aspect ratio</legend>
+          </fieldset>
+        </div>
+        <p class="note" id="from-note"></p>
+      </div>
 
+      <fieldset class="field to-field" id="to-field">
+        <legend>Compare with</legend>
+        <div class="pills" id="to-pills"></div>
+        <p class="note" id="to-note">Typical panels: 13.3", 14", 15.6", 16".</p>
+        <fieldset class="pills" id="to-ratio" hidden>
+          <legend>Aspect ratio</legend>
+        </fieldset>
+        <div class="other" id="to-model" hidden>
+          <label for="to-select">Model</label>
+          <select id="to-select"></select>
+        </div>
+      </fieldset>
+
+      <div class="actions">
+        <button type="button" class="primary" id="setup-apply">Show at real size</button>
+        <button type="button" id="setup-cancel">Cancel</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- Drawer: Details or Fine-tune, from the right edge. -->
+  <dialog class="drawer" id="drawer" aria-labelledby="drawer-h">
+    <div class="drawer-head">
+      <h2 id="drawer-h">Details</h2>
+      <button type="button" id="drawer-close" aria-label="Close">×</button>
+    </div>
+    <div id="panel-details">
+      <div id="facts"></div>
+      <div id="overview" class="overview"></div>
       <section class="notes" aria-labelledby="notes-h">
-        <h2 id="notes-h">How accurate is this?</h2>
-        <p>Browsers cannot read the physical size of a screen, so the size is worked out from the screen you pick. This assumes the browser is on the laptop's built-in screen, in a window at 100 % zoom. On an external monitor or at another zoom level the sizes will be off. Use the bank card to correct it.</p>
+        <h3 id="notes-h">How accurate is this?</h3>
+        <p>Browsers cannot read the physical size of a screen, so the size is worked out from the screen you pick. This assumes the browser is on the laptop's built-in screen, in a window at 100 % zoom. On an external monitor or at another zoom level the sizes will be off. Use Fine-tune with a bank card to correct it.</p>
+        <p>If the link does not name your screen, the page guesses it from the screen's resolution and offers it as a suggestion. Display scaling, browser zoom and external monitors change what the browser reports, so check the guess. It runs in your browser; nothing is sent or stored.</p>
         <p>Nothing is stored and nothing leaves your browser. Your choices live in this page's link, so you can share it.</p>
       </section>
-    </main>
-
-    <footer class="site-footer">
-      <a href="https://notchup.fi">Made by Notchup</a>
-      <a href="https://github.com/notchup-hq/screen-compare">Source on GitHub</a>
-      <span>MIT licence</span>
-    </footer>
-  </div>
+    </div>
+    <div id="panel-tune" hidden>
+      <div id="cal-body"></div>
+    </div>
+  </dialog>
 </body>
 </html>

@@ -9,7 +9,7 @@ export function initCalibrate(onChange) {
     <p>Hold a bank card against the screen. Drag the slider until the card below is the same size as the real one. This replaces the size worked out from the screen you picked.</p>
     <div class="card-stage"><div class="card" id="cal-card" aria-hidden="true"></div></div>
     <label class="cal-slider">Card size
-      <input type="range" id="cal-range" min="2" max="12" step="0.01">
+      <input type="range" id="cal-range" min="2" max="10" step="0.01">
     </label>
     <p><button type="button" id="cal-reset">Reset to calculated size</button></p>
     <p class="cal-note">Card: ${BANK_CARD_MM.width} × ${BANK_CARD_MM.height} mm (ISO/IEC 7810 ID-1).</p>`;

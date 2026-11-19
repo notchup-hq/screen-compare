@@ -1,12 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseState, serializeState, resolveScreen, customSpec, guessCurrent } from '../js/state.js';
+import { parseState, serializeState, resolveScreen, customSpec } from '../js/state.js';
 
 const defaults = { from: 'mbp16', to: 'mbp14' };
 
 test('round trip', () => {
   const s = { from: 'mba13', to: 'c-15.0-16x9', cal: 4.321, fill: true };
   assert.deepEqual(parseState(serializeState(s), defaults), s);
+  assert.deepEqual(parseState(serializeState({ ...s, fill: false }), defaults), { ...s, fill: false });
 });
 
 test('invalid params fall back to defaults', () => {
@@ -22,7 +23,14 @@ test('custom screen', () => {
   assert.equal(resolveScreen('c-16.0-bogus'), null);
 });
 
-test('guessCurrent matches looks-like resolution', () => {
-  assert.equal(guessCurrent(1728, 1117), 'mbp16');
-  assert.equal(guessCurrent(1, 1), 'mbp16');
+test('sample content is off by default and on only with fill=1', () => {
+  assert.equal(parseState('', defaults).fill, false);
+  assert.equal(parseState('?fill=0', defaults).fill, false);
+  assert.equal(parseState('?fill=1', defaults).fill, true);
+  assert.ok(!serializeState({ from: 'mbp16', to: 'mbp14', cal: null, fill: false }).includes('fill'));
+  assert.ok(serializeState({ from: 'mbp16', to: 'mbp14', cal: null, fill: true }).includes('fill=1'));
+});
+
+test('a missing from stays null so the page can ask', () => {
+  assert.equal(parseState('', { from: null, to: 'mbp14' }).from, null);
 });

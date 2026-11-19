@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-126 -126 252 252" role="img" aria-labelledby="t">
+  <title id="t">Notchup</title>
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f6dc96"/><stop offset=".45" stop-color="#d1aa55"/><stop offset="1" stop-color="#8c6a2c"/>
+    </linearGradient>
+    <linearGradient id="goldSoft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#e2c27a"/><stop offset="1" stop-color="#9c7a36"/>
+    </linearGradient>
+  </defs>
+  <polygon points="-13.01,-85.01 -12.01,-99.28 12.01,-99.28 13.01,-85.01 31.24,-80.13 39.23,-91.98 60.04,-79.97 53.77,-67.12 67.12,-53.77 79.97,-60.04 91.98,-39.23 80.13,-31.24 85.01,-13.01 99.28,-12.01 99.28,12.01 85.01,13.01 80.13,31.24 91.98,39.23 79.97,60.04 67.12,53.77 53.77,67.12 60.04,79.97 39.23,91.98 31.24,80.13 13.01,85.01 12.01,99.28 -12.01,99.28 -13.01,85.01 -31.24,80.13 -39.23,91.98 -60.04,79.97 -53.77,67.12 -67.12,53.77 -79.97,60.04 -91.98,39.23 -80.13,31.24 -85.01,13.01 -99.28,12.01 -99.28,-12.01 -85.01,-13.01 -80.13,-31.24 -91.98,-39.23 -79.97,-60.04 -67.12,-53.77 -53.77,-67.12 -60.04,-79.97 -39.23,-91.98 -31.24,-80.13" fill="url(#gold)"/>
+    <circle r="75" fill="#14171c"/>
+    <circle r="62" fill="none" stroke="url(#gold)" stroke-width="5"/>
+    <polygon points="0.00,0.00 -9.19,-9.19 46.67,-46.67" fill="url(#goldSoft)"/><polygon points="0.00,0.00 46.67,-46.67 9.19,9.19" fill="#2a2a2c"/>
+    <polygon points="0.00,0.00 9.19,-9.19 46.67,46.67" fill="url(#goldSoft)"/><polygon points="0.00,0.00 46.67,46.67 -9.19,9.19" fill="#2a2a2c"/>
+    <polygon points="0.00,0.00 9.19,9.19 -46.67,46.67" fill="url(#goldSoft)"/><polygon points="0.00,0.00 -46.67,46.67 -9.19,-9.19" fill="#2a2a2c"/>
+    <polygon points="0.00,0.00 -9.19,9.19 -46.67,-46.67" fill="url(#goldSoft)"/><polygon points="0.00,0.00 -46.67,-46.67 9.19,-9.19" fill="#2a2a2c"/>
+    <polygon points="0.00,0.00 -19.00,-0.00 0.00,-112.00" fill="url(#gold)"/><polygon points="0.00,0.00 0.00,-112.00 19.00,-0.00" fill="#202226"/>
+    <polygon points="0.00,0.00 0.00,-19.00 124.00,-0.00" fill="url(#gold)"/><polygon points="0.00,0.00 124.00,-0.00 0.00,19.00" fill="#202226"/>
+    <polygon points="0.00,0.00 19.00,-0.00 0.00,112.00" fill="url(#gold)"/><polygon points="0.00,0.00 0.00,112.00 -19.00,0.00" fill="#202226"/>
+    <polygon points="0.00,0.00 0.00,19.00 -124.00,0.00" fill="url(#gold)"/><polygon points="0.00,0.00 -124.00,0.00 -0.00,-19.00" fill="#202226"/>
+    <polygon points="-63.99,54.80 70.36,-79.55 79.55,-70.36 -54.80,63.99" fill="url(#gold)" stroke="#3a2c10" stroke-width="1.2" stroke-linejoin="round"/>
+    <polygon points="52.33,-83.44 106.07,-106.07 83.44,-52.33 74.95,-74.95" fill="url(#gold)" stroke="#3a2c10" stroke-width="1.2" stroke-linejoin="round"/>
+    <circle r="15" fill="url(#gold)" stroke="#3a2c10" stroke-width="1.2"/><circle r="8.5" fill="#14171c"/><circle r="4" fill="url(#gold)"/>
+</svg>
