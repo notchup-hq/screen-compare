@@ -2,7 +2,7 @@
 // no DOM. Precedence, in one place: a card measurement beats a typed size, which beats a model.
 //
 // The browser knows the resolution and devicePixelRatio but never the physical size, so we need
-// the diagonal: typed, taken from a model, or measured with a bank card.
+// the diagonal: typed, taken from a model, or measured with a card.
 //
 //   ppi            = hypot(native px width, native px height) / diagonal (in)
 //   CSS px per cm  = ppi / devicePixelRatio / 2.54

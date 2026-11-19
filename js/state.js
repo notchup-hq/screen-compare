@@ -1,7 +1,7 @@
 // URL query <-> state. This module never touches browser storage (only js/memory.js does).
 // ?size=21.5&to=mbp14&cal=3.84&fill=1  (sample content is off unless fill=1)
 //
-// Your screen is one of, strongest first: cal (CSS px per mm, from the bank card), size (the typed
+// Your screen is one of, strongest first: cal (CSS px per mm, from the card), size (the typed
 // diagonal in inches, with res=1920x1080 only when the resolution was edited, or ratio=16x9 only
 // when there is no usable resolution), or from (a laptop model id).
 // Compared screen: to=<preset id>, or a custom size c-<diagonal>-<ratio id>, e.g. c-16.0-16x10.

@@ -14,9 +14,9 @@ I needed to know how much smaller a 14 inch laptop screen would look next to my 
 
 ## How to use it
 
-1. Say how big your screen is. A detected laptop only needs a "That's right"; otherwise type the inches, or measure with a bank card.
+1. Say how big your screen is. A detected laptop only needs a "That's right"; otherwise type the inches, or measure with a card (any bank, ID or loyalty card: they are all the same size).
 2. Pick the screen to compare with: 13 to 16 inch laptops, 24 to 34 inch monitors, any other size or a specific model.
-3. A gold outline shows it at real size, with its width and height. Hold a ruler to the screen to check, or fine-tune with a bank card.
+3. A gold outline shows it at real size, with its width and height. Hold a ruler to the screen to check, or fine-tune with a card.
 
 Everything runs in your browser. No cookies, no tracking. Your screens are remembered in this browser only if you ask, and never leave it. A comparison lives in the page's link, so you can share it.
 

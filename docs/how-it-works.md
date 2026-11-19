@@ -18,7 +18,7 @@ Your choices are kept in the page's link, so you can share a comparison. No cook
 
 Browsers do not know a screen's physical size (a CSS inch is 96 CSS px, not a real inch). They do report the resolution and `devicePixelRatio`, so the one missing number is the diagonal, and the page gets it one of three ways, strongest first:
 
-1. **A bank card.** "Don't know the size? Measure with a card" (or Fine-tune in the result) lets you drag a slider until an on-screen card (85.60 × 54 mm) matches a real one. That sets the scale directly and is saved in the link as `cal`.
+1. **A card.** Bank, ID, driving licence, loyalty and library cards share one size (ISO/IEC 7810 ID-1). "Don't know the size? Measure with a card" (or Fine-tune in the result) lets you drag a slider until an on-screen card (85.60 × 54 mm) matches a real one. That sets the scale directly and is saved in the link as `cal`.
 2. **A typed size.** The diagonal in inches, from 10 to 100, for example 21.5 (decimals are fine, comma or dot; curved screens use the size the maker quotes). Saved as `size=21.5`.
 3. **A laptop model.** "Pick a model…", or the model the page recognised from your resolution. Its panel size is used.
 
