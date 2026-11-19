@@ -1,5 +1,5 @@
 // URL query <-> state. No cookies, no browser storage.
-// ?from=mbp16&to=mbp14&cal=3.84&fill=1
+// ?from=mbp16&to=mbp14&cal=3.84&fill=1  (sample content is off unless fill=1)
 // Custom screen: c-<diagonal>-<ratio id>, e.g. c-16.0-16x10
 
 import { SCREENS, RATIOS } from './screens.js';
@@ -32,12 +32,6 @@ export function resolveScreen(spec) {
 
 export function customSpec(diagonalIn, ratioId) {
   return `c-${Number(diagonalIn).toFixed(1)}-${ratioId}`;
-}
-
-/** Pick the preset whose "looks like" size matches the browser's screen, if any. */
-export function guessCurrent(width, height, fallback = 'mbp16') {
-  const hit = SCREENS.find((s) => s.looksLike && s.looksLike[0] === width && s.looksLike[1] === height);
-  return hit ? hit.id : fallback;
 }
 
 /** Parse a query string into state, falling back to defaults for anything invalid. */

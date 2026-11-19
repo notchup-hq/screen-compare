@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { sizeFromDiagonal, pxPerMm, areaRatio, fitsInside, overflowPerSide } from '../js/geometry.js';
+import { sizeFromDiagonal, pxPerMm, areaRatio, fitsInside, overflowPerSide, fitsBox } from '../js/geometry.js';
 import { resolveScreen } from '../js/state.js';
 
 const near = (a, b, tol = 0.2) => assert.ok(Math.abs(a - b) <= tol, `${a} not within ${tol} of ${b}`);
@@ -35,4 +35,12 @@ test('overflow per side is half the size difference', () => {
   const o = overflowPerSide(a, b);
   near(o.sideMm, (a.widthMm - b.widthMm) / 2, 1e-9);
   assert.ok(o.sideMm > 0 && o.topMm > 0);
+});
+
+test('fitsBox keeps a margin on every side', () => {
+  assert.equal(fitsBox(900, 600, 1000, 700), true);
+  assert.equal(fitsBox(900, 600, 1000, 700, 50), true);
+  assert.equal(fitsBox(900, 600, 1000, 700, 51), false);
+  assert.equal(fitsBox(1001, 600, 1000, 700), false);
+  assert.equal(fitsBox(900, 701, 1000, 700), false);
 });

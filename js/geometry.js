@@ -34,6 +34,11 @@ export function overflowPerSide(target, current) {
   };
 }
 
+/** True when a w x h box fits in a boxW x boxH area with `margin` px kept free on every side. */
+export function fitsBox(w, h, boxW, boxH, margin = 0) {
+  return w + margin * 2 <= boxW && h + margin * 2 <= boxH;
+}
+
 /** Format millimetres as "x.x cm". */
 export function formatCm(mm) {
   return `${(mm / 10).toFixed(1)} cm`;
