@@ -1,4 +1,5 @@
 import { initCalibrate } from './calibrate.js';
+import { createMemory, defaultName, matchProfile, signatureOf } from './memory.js';
 import { createSetup } from './setup.js';
 import { initDetails } from './details.js';
 import { draw, initRender, renderOverview } from './render.js';
@@ -18,25 +19,36 @@ $('#version').textContent = `v${VERSION}`;
 
 // State lives in the link. A link with a valid `to` and a way to know your screen (a size, a card
 // measurement or a model) goes straight to the result; anything else starts at the start view.
-// Nothing is stored anywhere.
+// The only thing ever stored is a screen the visitor asked to remember (js/memory.js).
 const link = parseState(location.search, { from: null, to: null });
 
 const screenNow = () => ({ width: window.screen.width, height: window.screen.height, dpr: window.devicePixelRatio || 1 });
 
-// Without a way to know your screen in the link, guess a laptop model from the resolution. Only a
-// single match is preselected; several or none leave the choice to the visitor. Monitors and
-// generic sizes are never guessed.
-const hasYou = Boolean(link.from || link.size || link.cal);
+// Your screen comes from, strongest first: the link, the screen remembered for this display (same
+// width, height and pixel ratio), a laptop model guessed from the resolution. Only a single match is
+// guessed; several or none leave the choice to the visitor. Monitors and generic sizes are never guessed.
+const memory = createMemory();
+let profiles = memory.list();
 const now = screenNow();
-const guess = hasYou ? null : matchScreens(now.width, now.height, now.dpr);
+const currentSig = () => signatureOf(screenNow());
+const currentProfile = () => matchProfile(profiles, currentSig());
+const profileYou = (p) => ({ from: p.from, size: p.size, res: p.res, ratio: p.ratio, cal: p.cal });
+const noYou = { from: null, size: null, res: null, ratio: null, cal: null };
+
+const linkHasYou = Boolean(link.from || link.size || link.cal);
+const guess = matchScreens(now.width, now.height, now.dpr);
 const guessedFrom = guess && guess.matches.length === 1 ? guess.matches[0] : null;
+const startProfile = linkHasYou ? null : currentProfile();
+// 'link' | 'profile' | 'guess' | null: where your screen came from. Only a guess is labelled "(detected)".
+let source = linkHasYou ? 'link' : startProfile ? 'profile' : guessedFrom ? 'guess' : null;
+const you0 = source === 'link' ? link : startProfile ? profileYou(startProfile) : { ...noYou, from: guessedFrom };
 
 const state = {
   ...link,
-  ratio: usableResolution(now.width, now.height) ? null : link.ratio, // only needed when the resolution is no help
-  from: link.from ?? guessedFrom,
-  to: link.to ?? (link.size ? smallerThanSize(link.size) : smallerThan(link.from ?? guessedFrom)),
+  ...you0,
+  ratio: usableResolution(now.width, now.height) ? null : you0.ratio, // only needed when the resolution is no help
 };
+state.to = link.to ?? (state.size ? smallerThanSize(state.size) : smallerThan(state.from));
 
 let view = link.to && (state.from || state.size || state.cal) ? 'result' : 'start';
 
@@ -65,6 +77,40 @@ function setView(next) {
   document.body.dataset.view = next;
   $('#start').hidden = next !== 'start';
   $('#result').hidden = next !== 'result';
+}
+
+// ---- Remembered screens (js/memory.js is the only code that touches storage).
+const REMEMBER_FAILED = "Couldn't remember this screen in this browser.";
+const startBtn = $('#start-btn');
+
+function rememberNote(text) {
+  $('#remembered-status').textContent = text;
+  $('#remember-live').textContent = text;
+}
+
+/** Remember the screen as it is now (a card, a typed size or a model), on this display. */
+function rememberNow() {
+  const you = yourFor(state);
+  if (!you || !memory.available()) return false;
+  const ok = memory.save({
+    name: defaultName(you), sig: currentSig(), saved: Date.now(),
+    from: state.from, size: state.size, res: state.res, ratio: state.ratio, cal: state.cal,
+  });
+  profiles = memory.list();
+  rememberNote(ok ? '' : REMEMBER_FAILED);
+  return ok;
+}
+
+function forgetNow() {
+  const p = currentProfile();
+  if (!p) return;
+  memory.remove(p.sig);
+  profiles = memory.list();
+}
+
+function refreshMemory() {
+  profiles = memory.list();
+  update();
 }
 
 // Debounced and guarded: Safari rate-limits replaceState and file:// pages may refuse it.
@@ -107,12 +153,13 @@ function update() {
   renderFacts(from, to);
   renderOverview($('#overview'), from, to);
   details.sync({ basis: from.basis, res: from.res ?? null, edited: state.res, ratio: state.ratio, to: state.to });
+  details.syncRemembered({ available: memory.available(), profiles, currentSig: currentSig() });
   emitCompare(scale, state.cal);
   const kind = accuracy({
     your: from,
     screen: screenNow(),
     win: { outerWidth: window.outerWidth, innerWidth: window.innerWidth },
-    detected: state.from !== null && state.from === guessedFrom,
+    detected: source === 'guess' && state.from !== null && state.from === guessedFrom,
   });
   draw({
     from,
@@ -131,6 +178,20 @@ function update() {
 // Resolution and aspect ratios live in the Details drawer. Clearing an edited resolution on a screen
 // that reports none falls back to 16:9, as the setup used to.
 const details = initDetails($('#drawer'), {
+  onRename(sig, name) {
+    if (memory.rename(sig, name)) refreshMemory();
+    else rememberNote(REMEMBER_FAILED);
+  },
+  onDelete(sig) {
+    memory.remove(sig);
+    rememberNote('');
+    refreshMemory();
+  },
+  onClear() {
+    memory.clear();
+    refreshMemory();
+    rememberNote('Forgot all remembered screens.');
+  },
   onChange(patch) {
     if ('res' in patch) {
       state.res = patch.res;
@@ -146,7 +207,7 @@ let applied = false; // the setup closed because a choice was applied (it has ju
 const setup = createSetup($('#setup'), {
   native: nativeResolution(now.width, now.height, now.dpr),
   diagonalOf: (your) => yourFor(your ?? {})?.diagonalIn ?? null,
-  onApply({ cal, from, size, res, ratio, to }) {
+  onApply({ cal, from, size, res, ratio, to, remember }) {
     // The setup dialog hands over exactly one way to know your screen; the others are cleared.
     state.cal = cal ?? null;
     state.from = from ?? null;
@@ -154,11 +215,25 @@ const setup = createSetup($('#setup'), {
     state.res = res ?? null;
     state.ratio = ratio ?? null;
     state.to = to;
+    // The checkbox: ticked remembers this screen, unticked (when it was remembered) forgets it.
+    if (remember === true) rememberNote(rememberNow() ? '' : REMEMBER_FAILED);
+    else if (remember === false) forgetNow();
     const wasStart = view === 'start';
     applied = true;
     setView('result');
     update();
     if (wasStart) $('#to-btn').focus(); // the Start button has just gone away
+  },
+  // "Forget this screen" on the first question: the profile is handed back so Undo can save it again.
+  onForget() {
+    const gone = memory.take(currentSig());
+    profiles = memory.list();
+    return gone;
+  },
+  onRestore(profile) {
+    const ok = memory.save(profile);
+    profiles = memory.list();
+    return ok;
   },
   onMeasure({ your }) {
     emitCardScale(your ?? {});
@@ -176,10 +251,14 @@ function openSetup(focus) {
     your: { cal: state.cal, from: state.from, size: state.size, res: state.res, ratio: state.ratio },
     to: view === 'result' ? state.to : link.to,
     focus,
+    // null: storage is blocked, so there is nothing to offer.
+    remember: memory.available() ? { checked: Boolean(currentProfile()) } : null,
+    // On the start view a remembered screen is shown on the first question, to confirm or change.
+    profile: view === 'start' && source === 'profile' && currentProfile() ? { saved: currentProfile().saved } : null,
   });
 }
 
-$('#start-btn').addEventListener('click', () => openSetup('from'));
+startBtn.addEventListener('click', () => openSetup('from'));
 $('#from-btn').addEventListener('click', () => openSetup('from'));
 $('#to-btn').addEventListener('click', () => openSetup('to'));
 
@@ -187,8 +266,19 @@ $('#fill').addEventListener('change', (e) => { state.fill = e.target.checked; up
 
 // Drawer: Details or Fine-tune.
 const drawer = $('#drawer');
+let drawerKind = 'details';
+let tuneTouched = false; // the card was moved, or the checkbox was changed, since the drawer opened
+let skipRemember = false;
 function openDrawer(kind) {
   const tune = kind === 'tune';
+  drawerKind = kind;
+  if (tune) {
+    // Measuring from the setup dialog uses that dialog's own checkbox.
+    calRememberRow.hidden = !memory.available() || setup.isOpen();
+    calRemember.checked = Boolean(currentProfile());
+    tuneTouched = false;
+    skipRemember = false;
+  }
   $('#drawer-h').textContent = tune ? 'Check the real size with a card' : 'Details';
   $('#panel-details').hidden = tune;
   $('#panel-tune').hidden = !tune;
@@ -199,7 +289,14 @@ $('#tune-btn').addEventListener('click', () => openDrawer('tune'));
 $('#drawer-close').addEventListener('click', () => drawer.close());
 drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.close(); });
 // The card drawer opens over the setup dialog; when it closes, put focus back there.
-drawer.addEventListener('close', () => { if (setup.isOpen()) setup.refocus(); });
+drawer.addEventListener('close', () => {
+  if (setup.isOpen()) { setup.refocus(); return; }
+  if (drawerKind === 'tune' && tuneTouched && !skipRemember && !calRememberRow.hidden) {
+    if (calRemember.checked) { if (!rememberNow()) rememberNote(REMEMBER_FAILED); } else forgetNow();
+    refreshMemory();
+  }
+  tuneTouched = false;
+});
 // Closing the setup without applying drops a card draft: redraw the card at the real scale.
 $('#setup').addEventListener('close', () => {
   if (applied) applied = false;
@@ -214,14 +311,19 @@ initCalibrate((v) => {
     emitCardScale(setup.readYour() ?? {});
   } else if (v === null && !state.from && !state.size) {
     // Resetting a card-only measurement leaves nothing to draw: ask for the size again.
+    skipRemember = true;
     drawer.close();
     startOver();
     openSetup('from');
   } else {
     state.cal = v;
+    tuneTouched = true;
     update();
   }
 });
+const calRemember = $('#cal-remember');
+const calRememberRow = $('#cal-remember-row');
+calRemember.addEventListener('change', () => { tuneTouched = true; });
 initRender();
 
 // Full screen and Drawing only: the toolbar and footer step aside. A floating Exit button is always
@@ -260,8 +362,12 @@ function startOver() {
   drawingOnly = false;
   syncChrome();
   try { history.replaceState(null, '', startOverUrl(location.pathname, location.hash)); } catch { /* nothing to clear */ }
-  Object.assign(state, { from: guessedFrom, size: null, res: null, ratio: null, cal: null, fill: false });
-  state.to = smallerThan(guessedFrom);
+  // Back to where you started: the screen remembered for this display, else the guess. Nothing is deleted.
+  const p = currentProfile();
+  source = p ? 'profile' : guessedFrom ? 'guess' : null;
+  const you = p ? profileYou(p) : { ...noYou, from: guessedFrom };
+  Object.assign(state, { ...you, ratio: usableResolution(now.width, now.height) ? null : you.ratio, fill: false });
+  state.to = state.size ? smallerThanSize(state.size) : smallerThan(state.from);
   setView('start');
   window.scrollTo(0, 0);
   $('#start-btn').focus();

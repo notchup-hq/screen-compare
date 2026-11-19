@@ -3,7 +3,7 @@
 // you are thinking of: four big buttons that go straight to the result, and one link for any other
 // size or a specific model. Everything technical lives in the Details drawer (js/details.js).
 // Plain controls only; the page owns the state and gets the result through
-// onApply({ cal | from | size/res/ratio, to }).
+// onApply({ cal | from | size/res/ratio, to, remember }).
 
 import { resolveScreen } from './state.js';
 import {
@@ -11,6 +11,7 @@ import {
 } from './compare-options.js';
 import { SIZE_MAX_IN, SIZE_MIN_IN, usableResolution, validSize } from './scale.js';
 import { parseSize, sizeStepper } from './size-field.js';
+import { rememberedLine } from './memory.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const $ = (root, sel) => root.querySelector(sel);
@@ -66,7 +67,7 @@ function sizeButton({ preset, label, name }, screen, scale, boxHeight) {
  *   native: the screen's resolution as the browser reports it, [long, short], or null.
  *   diagonalOf(your): the diagonal in inches of what readYour() returned, or null.
  */
-export function createSetup(dialog, { onApply, onMeasure, native, diagonalOf }) {
+export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, native, diagonalOf }) {
   const stepYou = $(dialog, '#step-you');
   const stepTo = $(dialog, '#step-to');
   const youH = $(dialog, '#you-h');
@@ -84,6 +85,12 @@ export function createSetup(dialog, { onApply, onMeasure, native, diagonalOf }) 
   const modelWrap = $(dialog, '#model-wrap');
   const modelSelect = $(dialog, '#model-select');
   const cardBtn = $(dialog, '#card-btn');
+  const rememberRow = $(dialog, '#remember-row');
+  const rememberBox = $(dialog, '#remember');
+  const knownRemembered = $(dialog, '#known-remembered');
+  const knownForget = $(dialog, '#known-forget');
+  const toast = $(dialog, '#setup-toast');
+  const toastUndo = $(dialog, '#toast-undo');
   const sizes = $(dialog, '#to-sizes');
   const otherBtn = $(dialog, '#other-btn');
   const toOther = $(dialog, '#to-other');
@@ -114,6 +121,11 @@ export function createSetup(dialog, { onApply, onMeasure, native, diagonalOf }) 
   let step = 1;
   let kind = 'laptop';
   let currentTo = null;
+  let canRemember = false; // storage works: offer "Remember this screen"
+  let remembered = null; // { saved } while the first question shows a remembered screen to confirm
+  let openedYour = {}; // what the dialog was opened with, to put back on Undo
+  let forgotten = null; // the profile handed back by onForget, for Undo
+  let toastTimer = 0;
   let keepCustom = null; // { size, spec }: a custom compared size shown under "Other size", kept as it is until edited
 
   const sizeValue = () => {
@@ -148,13 +160,27 @@ export function createSetup(dialog, { onApply, onMeasure, native, diagonalOf }) 
   // ---- Step 1: how big is your screen?
   function renderYou() {
     syncSize();
-    const known = Boolean(cal || (preset && modelIds.has(preset)));
+    const you = readYour();
+    const isRemembered = Boolean(remembered && you);
+    const known = isRemembered || Boolean(cal || (preset && modelIds.has(preset)));
     youKnown.hidden = !known;
     youAsk.hidden = known;
+    knownRemembered.hidden = !isRemembered;
+    knownForget.hidden = !isRemembered;
+    knownChange.textContent = isRemembered ? 'Measure again' : 'No, change it';
     if (known) {
-      const d = cal ? diagonalOf({ cal }) : null;
-      knownText.textContent = cal ? `Measured with a card${d ? `: about ${Math.round(d * 10) / 10}"` : ''}` : resolveScreen(preset).short;
+      const d = you ? diagonalOf(you) : null;
+      const inches = d ? `${Math.round(d * 10) / 10}"` : '';
+      if (isRemembered) {
+        knownText.textContent = `Your screen: ${preset && modelIds.has(preset) ? resolveScreen(preset).short : inches}`;
+        knownRemembered.textContent = rememberedLine(remembered.saved);
+      } else {
+        knownText.textContent = cal ? `Measured with a card${inches ? `: about ${inches}` : ''}` : resolveScreen(preset).short;
+      }
     }
+    // "Remember this screen" sits right under the main button; a remembered screen has its own links instead.
+    rememberRow.hidden = !canRemember || isRemembered;
+    (known ? knownOk : sizeNext).after(rememberRow);
     // One link at a time: the card at first, the model list after "No, change it".
     cardBtn.hidden = changing;
     modelBtn.hidden = !changing || !modelWrap.hidden;
@@ -171,9 +197,32 @@ export function createSetup(dialog, { onApply, onMeasure, native, diagonalOf }) 
     stepTo.hidden = n !== 2;
     back.hidden = n !== 2;
     dialog.setAttribute('aria-labelledby', n === 1 ? 'you-h' : 'to-h');
+    if (n === 2) hideToast();
     if (n === 1) renderYou();
     else renderTo();
     refocus();
+  }
+
+  /** Put what the dialog was opened with into the first question: a card, a size or a model. */
+  function seed(your) {
+    forget();
+    cal = your.cal ?? null;
+    passRes = your.res ?? null;
+    passRatio = your.ratio ?? null;
+    sizeInput.value = '';
+    showError('');
+    if (!cal) {
+      if (your.size) {
+        sizeInput.value = your.size;
+      } else if (your.from) {
+        const s = resolveScreen(your.from);
+        if (s) {
+          preset = s.id;
+          if (modelIds.has(s.id)) modelSelect.value = s.id;
+          else sizeInput.value = s.diagonalIn; // a generic size: ask, prefilled
+        }
+      }
+    }
   }
 
   function forget() {
@@ -200,11 +249,54 @@ export function createSetup(dialog, { onApply, onMeasure, native, diagonalOf }) 
   });
   knownOk.addEventListener('click', () => goStep(2));
   knownChange.addEventListener('click', () => {
-    forget();
-    sizeInput.value = '';
-    changing = true;
+    if (remembered) {
+      // "Measure again": the number field, prefilled with the size we have; the card link stays available.
+      const d = diagonalOf(readYour() ?? {});
+      remembered = null;
+      forget();
+      sizeInput.value = d ? String(Math.round(d * 10) / 10) : '';
+      changing = false;
+    } else {
+      forget();
+      sizeInput.value = '';
+      changing = true;
+    }
     renderYou();
     sizeInput.focus();
+  });
+
+  // "Forget this screen": the profile is deleted at once and the normal first question is shown, with a
+  // short "Forgotten" note that offers Undo.
+  function hideToast() {
+    clearTimeout(toastTimer);
+    toast.hidden = true;
+    forgotten = null;
+  }
+  knownForget.addEventListener('click', () => {
+    forgotten = onForget();
+    remembered = null;
+    forget();
+    sizeInput.value = '';
+    rememberBox.checked = false;
+    changing = false;
+    renderYou();
+    sizeInput.focus();
+    if (forgotten) {
+      toast.hidden = false;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(hideToast, 5000);
+    }
+  });
+  toastUndo.addEventListener('click', () => {
+    const back = forgotten;
+    hideToast();
+    if (!back || !onRestore(back)) return;
+    seed(openedYour);
+    remembered = { saved: back.saved };
+    rememberBox.checked = true;
+    changing = false;
+    renderYou();
+    knownOk.focus();
   });
   modelBtn.addEventListener('click', () => {
     modelWrap.hidden = false;
@@ -292,7 +384,8 @@ export function createSetup(dialog, { onApply, onMeasure, native, diagonalOf }) 
     const your = readYour();
     if (!your || !to) return;
     dialog.close();
-    onApply({ ...your, to });
+    // remember: true or false from the checkbox, null when storage is not available.
+    onApply({ ...your, to, remember: canRemember ? rememberBox.checked : null });
   }
 
   sizes.addEventListener('click', (e) => {
@@ -319,6 +412,7 @@ export function createSetup(dialog, { onApply, onMeasure, native, diagonalOf }) 
   back.addEventListener('click', () => goStep(1));
 
   $(dialog, '#setup-close').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('close', hideToast);
   // A click on the backdrop (the dialog element itself, outside its content) closes it.
   dialog.addEventListener('click', (e) => { if (e.target === dialog) dialog.close(); });
 
@@ -340,30 +434,21 @@ export function createSetup(dialog, { onApply, onMeasure, native, diagonalOf }) 
      * Open with the current choices.
      * `your` = { cal, from, size, res, ratio }, all optional; `to` is the compared screen now, if any;
      * `focus` is 'to' to start at the second question (your screen is already known), else 'from'.
+     * `remember` = { checked } offers "Remember this screen" (null: storage is blocked, no offer);
+     * `profile` = { saved } when your screen came from a remembered one: the first question shows it
+     * ("Your screen: 26.9"", when it was remembered) with That's right, Measure again and Forget this screen.
      */
-    open({ your = {}, to = null, focus = 'from' }) {
-      forget();
-      cal = your.cal ?? null;
-      passRes = your.res ?? null;
-      passRatio = your.ratio ?? null;
+    open({ your = {}, to = null, focus = 'from', remember = null, profile = null }) {
+      canRemember = Boolean(remember);
+      rememberBox.checked = Boolean(remember?.checked);
+      hideToast();
+      openedYour = your;
+      seed(your);
       changing = false;
       currentTo = resolveScreen(to) ? to : null;
-      sizeInput.value = '';
-      showError('');
       modelWrap.hidden = true;
       modelBtn.setAttribute('aria-expanded', 'false');
-      if (!cal) {
-        if (your.size) {
-          sizeInput.value = your.size;
-        } else if (your.from) {
-          const s = resolveScreen(your.from);
-          if (s) {
-            preset = s.id;
-            if (modelIds.has(s.id)) modelSelect.value = s.id;
-            else sizeInput.value = s.diagonalIn; // a generic size: ask, prefilled
-          }
-        }
-      }
+      remembered = profile && readYour() ? profile : null;
       dialog.showModal();
       goStep(focus === 'to' && readYour() ? 2 : 1);
     },
