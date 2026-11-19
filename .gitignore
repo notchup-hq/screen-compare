@@ -1,0 +1,14 @@
+# Local working memory (README only is tracked)
+.local/*
+!.local/README.md
+
+# Claude Code local settings
+.claude/settings.local.json
+
+# Environment and editors
+.env*
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
+node_modules/
