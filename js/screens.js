@@ -2,8 +2,9 @@
 //
 // Fields:
 //   id          stable slug used in the URL (?from=...&to=...)
-//   group       heading in the screen lists (Apple, Framework, Microsoft, Generic laptops, Monitors)
-//   kind        'laptop' or 'monitor'. Only laptop models with a `source` are ever detected
+//   group       heading in the screen lists (Apple, Framework, Microsoft, Generic laptops, Monitors,
+//               Tablets, Phones)
+//   kind        'laptop', 'monitor', 'tablet' or 'phone'. Only laptop models with a `source` are ever detected
 //               from the screen's resolution; a monitor's size is never guessed.
 //   name        label shown in the picker list
 //   short       short name used in the toolbar and the area chip; keep the size in
@@ -14,7 +15,7 @@
 //               sample-content view
 //   source      maker spec page the numbers were checked against (omit for generic sizes)
 //
-// Monitors are generic sizes only (diagonal and ratio are all that matter), so they need no upkeep.
+// Monitors, tablets and phones are generic sizes only (diagonal and ratio are all that matter), so they need no upkeep.
 //
 // To add a preset, see "Adding a screen preset" in docs/how-it-works.md.
 
@@ -128,6 +129,16 @@ export const SCREENS = [
   { id: 'm27', group: 'Monitors', kind: 'monitor', name: 'Generic 27" 16:9 monitor', short: '27" monitor', diagonalIn: 27, resX: 2560, resY: 1440, looksLike: [2560, 1440] },
   { id: 'm32', group: 'Monitors', kind: 'monitor', name: 'Generic 32" 16:9 monitor', short: '32" monitor', diagonalIn: 32, resX: 3840, resY: 2160, looksLike: [2560, 1440] },
   { id: 'm34', group: 'Monitors', kind: 'monitor', name: 'Generic 34" 21:9 ultrawide', short: '34" ultrawide', diagonalIn: 34, resX: 3440, resY: 1440, looksLike: [3440, 1440] },
+  // Generic phones and tablets, stored in landscape like the rest; they are drawn upright when your
+  // own screen is held upright (handheld() in js/compare-options.js).
+  { id: 't83', group: 'Tablets', kind: 'tablet', name: 'Generic 8.3" tablet', short: '8.3" tablet', diagonalIn: 8.3, resX: 2266, resY: 1488, looksLike: [1133, 744] },
+  { id: 't11', group: 'Tablets', kind: 'tablet', name: 'Generic 11" tablet', short: '11" tablet', diagonalIn: 11, resX: 2420, resY: 1668, looksLike: [1210, 834] },
+  { id: 't124', group: 'Tablets', kind: 'tablet', name: 'Generic 12.4" 16:10 tablet', short: '12.4" tablet', diagonalIn: 12.4, resX: 2800, resY: 1752, looksLike: [1280, 800] },
+  { id: 't13', group: 'Tablets', kind: 'tablet', name: 'Generic 13" 4:3 tablet', short: '13" tablet', diagonalIn: 13, resX: 2732, resY: 2048, looksLike: [1366, 1024] },
+  { id: 'p54', group: 'Phones', kind: 'phone', name: 'Generic 5.4" phone', short: '5.4" phone', diagonalIn: 5.4, resX: 2340, resY: 1080, looksLike: [780, 360] },
+  { id: 'p61', group: 'Phones', kind: 'phone', name: 'Generic 6.1" phone', short: '6.1" phone', diagonalIn: 6.1, resX: 2556, resY: 1179, looksLike: [852, 393] },
+  { id: 'p65', group: 'Phones', kind: 'phone', name: 'Generic 6.5" phone', short: '6.5" phone', diagonalIn: 6.5, resX: 2400, resY: 1080, looksLike: [915, 412] },
+  { id: 'p69', group: 'Phones', kind: 'phone', name: 'Generic 6.9" phone', short: '6.9" phone', diagonalIn: 6.9, resX: 2868, resY: 1320, looksLike: [956, 440] },
 ];
 
 // Aspect ratios offered for custom (typed) sizes.
@@ -137,6 +148,7 @@ export const RATIOS = [
   { id: '3x2', label: '3:2', value: 3 / 2 },
   { id: '21x9', label: '21:9', value: 21 / 9 },
   { id: '4x3', label: '4:3', value: 4 / 3 },
+  { id: '20x9', label: '20:9', value: 20 / 9 },
 ];
 
 export const BANK_CARD_MM = { width: 85.6, height: 53.98 };

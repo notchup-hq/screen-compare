@@ -2,13 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SCREENS } from '../js/screens.js';
 import { resolveScreen } from '../js/state.js';
-import { GROUPS, LAPTOP_SIZES, STEP2_SIZES, groupedScreens, laptopModels, kindForDiagonal, otherSizeSpec, otherChoice, laptopSizeFor, laptopSpec } from '../js/compare-options.js';
+import { GROUPS, LAPTOP_SIZES, STEP2_SIZES, groupedScreens, laptopModels, kindOfYours, kindsToShow, step2KindOf, handheld, facing, otherSizeSpec, otherChoice, laptopSizeFor, laptopSpec } from '../js/compare-options.js';
 
 test('every preset belongs to a known group, and the lists keep them all', () => {
   for (const s of SCREENS) assert.ok(GROUPS.includes(s.group), `${s.id}: ${s.group}`);
   const grouped = groupedScreens();
   assert.equal(grouped.flatMap((g) => g.screens).length, SCREENS.length);
-  assert.equal(grouped.at(-1).group, 'Monitors');
+  assert.equal(grouped.at(-1).group, 'Phones');
 });
 
 test('the model list for your own screen is laptop models with a source', () => {
@@ -19,7 +19,7 @@ test('the model list for your own screen is laptop models with a source', () => 
 });
 
 test('the second question offers four generic sizes by the kind of your screen', () => {
-  assert.deepEqual(Object.keys(STEP2_SIZES), ['laptop', 'monitor']);
+  assert.deepEqual(Object.keys(STEP2_SIZES), ['phone', 'tablet', 'laptop', 'monitor']);
   for (const [kind, items] of Object.entries(STEP2_SIZES)) {
     assert.equal(items.length, 4, kind);
     for (const p of items) {
@@ -30,15 +30,49 @@ test('the second question offers four generic sizes by the kind of your screen',
   }
   assert.deepEqual(STEP2_SIZES.laptop.map((p) => p.label), ['13"', '14"', '15"', '16"']);
   assert.deepEqual(STEP2_SIZES.monitor.map((p) => p.label), ['24"', '27"', '32"', '34" wide']);
+  assert.deepEqual(STEP2_SIZES.phone.map((p) => p.label), ['5.4"', '6.1"', '6.5"', '6.9"']);
+  assert.deepEqual(STEP2_SIZES.tablet.map((p) => p.label), ['8.3"', '11"', '12.4"', '13"']);
 });
 
-test('a screen of 19 inches or more counts as a monitor', () => {
-  assert.equal(kindForDiagonal(13.3), 'laptop');
-  assert.equal(kindForDiagonal(18.9), 'laptop');
-  assert.equal(kindForDiagonal(19), 'monitor');
-  assert.equal(kindForDiagonal(27), 'monitor');
-  assert.equal(kindForDiagonal(null), 'laptop');
-  assert.equal(kindForDiagonal(NaN), 'laptop');
+test('"Show all sizes" lists your own kind first, then the rest', () => {
+  assert.deepEqual(kindsToShow('phone', false), ['phone']);
+  assert.deepEqual(kindsToShow('laptop', true), ['laptop', 'phone', 'tablet', 'monitor']);
+  assert.equal(step2KindOf('p61'), 'phone');
+  assert.equal(step2KindOf('m34'), 'monitor');
+  assert.equal(step2KindOf('mbp14'), null);
+  assert.equal(step2KindOf(null), null);
+});
+
+test('phones and tablets are turned the way you hold your screen; laptops never', () => {
+  const phone = resolveScreen('p61');
+  assert.ok(handheld(phone) && phone.widthMm > phone.heightMm);
+  const up = facing(phone, true);
+  assert.equal(up.widthMm, phone.heightMm);
+  assert.equal(up.heightMm, phone.widthMm);
+  assert.ok(Math.abs(up.ratio * phone.ratio - 1) < 1e-9);
+  assert.deepEqual(up.looksLike, [393, 852]);
+  assert.equal(facing(phone, false), phone);
+  assert.equal(facing(up, true), up);
+  const laptop = resolveScreen('g14');
+  assert.ok(!handheld(laptop));
+  assert.equal(facing(laptop, true), laptop);
+  assert.ok(handheld(resolveScreen('c-6.3-20x9')) && handheld(resolveScreen('c-10.0-4x3')));
+  assert.ok(!handheld(resolveScreen('c-22.0-16x9')));
+  assert.equal(facing(null, true), null);
+});
+
+test('your screen is a phone under 7.5", a tablet when touch and under 14", a monitor from 19"', () => {
+  assert.equal(kindOfYours(6.1), 'phone');
+  assert.equal(kindOfYours(7.4, { touch: true }), 'phone');
+  assert.equal(kindOfYours(11, { touch: true }), 'tablet');
+  assert.equal(kindOfYours(13.9, { touch: true }), 'tablet');
+  assert.equal(kindOfYours(13.3), 'laptop');
+  assert.equal(kindOfYours(14, { touch: true }), 'laptop');
+  assert.equal(kindOfYours(18.9), 'laptop');
+  assert.equal(kindOfYours(19), 'monitor');
+  assert.equal(kindOfYours(27, { touch: true }), 'monitor');
+  assert.equal(kindOfYours(null), 'laptop');
+  assert.equal(kindOfYours(NaN), 'laptop');
 });
 
 test('another size typed in the second question becomes a preset or a custom size', () => {
@@ -48,6 +82,9 @@ test('another size typed in the second question becomes a preset or a custom siz
   assert.equal(otherSizeSpec(22, 'laptop'), 'c-22.0-16x10');
   assert.equal(otherSizeSpec(22, 'monitor'), 'c-22.0-16x9');
   assert.equal(otherSizeSpec(15.64, 'laptop'), 'c-15.6-16x10');
+  assert.equal(otherSizeSpec(6.3, 'phone'), 'c-6.3-20x9');
+  assert.equal(otherSizeSpec(13, 'tablet'), 't13');
+  assert.equal(otherSizeSpec(10, 'tablet'), 'c-10.0-4x3');
   assert.equal(otherSizeSpec(3.9, 'laptop'), null);
   assert.equal(otherSizeSpec(100.1, 'monitor'), null);
   assert.equal(otherSizeSpec(100, 'monitor'), 'c-100.0-16x9');
