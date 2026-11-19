@@ -41,13 +41,24 @@ const ALLOWED_URLS = [
   /const SVG_NS = 'http:\/\/www\.w3\.org\/2000\/svg';/g,
 ];
 
+// In index.html only: the page's own address (canonical, link previews, structured data) and the
+// structured data's vocabulary and maker. Search engines and link previews read them; the page never does.
+const ALLOWED_IN_HTML = [
+  /https:\/\/screen-compare\.notchup\.fi\/[^"\s]*/g,
+  /"@context": "https:\/\/schema\.org"/g,
+  /"url": "https:\/\/notchup\.fi"/g,
+];
+
 /** Problems in one file's text, as "file:line: what". */
 export function scan(file, text) {
   const name = basename(file);
   const problems = [];
   text.split('\n').forEach((raw, i) => {
     let line = ALLOWED_URLS.reduce((l, re) => l.replace(re, ''), raw);
-    if (name === 'index.html') line = line.replace(/<a\s[^>]*href="https?:\/\/[^"]*"/g, ''); // links the visitor may click
+    if (name === 'index.html') {
+      line = line.replace(/<a\s[^>]*href="https?:\/\/[^"]*"/g, ''); // links the visitor may click
+      line = ALLOWED_IN_HTML.reduce((l, re) => l.replace(re, ''), line);
+    }
     if (name === 'screens.js') line = line.replace(/^\s*source:\s*'https?:\/\/[^']*',?/, ''); // spec page references
     for (const re of FORBIDDEN) {
       const m = re.exec(line);
@@ -110,17 +121,23 @@ test('the scanner catches what it should', () => {
     ['styles.css', "@import url('x.css');"],
     ['styles.css', 'body { background: url(https://example.com/a.png); }'],
     ['js/screens.js', "const x = 'https://example.com';"],
+    ['index.html', '<meta property="og:image" content="https://example.com/og.png">'],
+    ['js/x.js', "const own = 'https://screen-compare.notchup.fi/x';"],
   ];
   for (const [file, text] of bad) assert.notDeepEqual(scan(file, text), [], `${file}: ${text}`);
 });
 
-test('the scanner allows links, spec sources and XML namespaces', () => {
+test('the scanner allows links, spec sources, XML namespaces and the page\'s own metadata', () => {
   const ok = [
     ['js/memory.js', 'export function createMemory(getStorage = () => window.localStorage) {'],
     ['index.html', '<a href="https://notchup.fi">Made by Notchup</a>'],
     ['js/screens.js', "    source: 'https://support.apple.com/en-us/121554',"],
     ['assets/mark.svg', '<svg xmlns="http://www.w3.org/2000/svg" xmlns:c2pa="http://c2pa.org/manifest">'],
     ['js/render.js', "const SVG_NS = 'http://www.w3.org/2000/svg';"],
+    ['index.html', '<link rel="canonical" href="https://screen-compare.notchup.fi/">'],
+    ['index.html', '<meta property="og:image" content="https://screen-compare.notchup.fi/assets/og.png">'],
+    ['index.html', '    "@context": "https://schema.org",'],
+    ['index.html', '    "creator": { "@type": "Organization", "name": "Notchup Oy", "url": "https://notchup.fi" }'],
   ];
   for (const [file, text] of ok) assert.deepEqual(scan(file, text), [], `${file}: ${text}`);
 });

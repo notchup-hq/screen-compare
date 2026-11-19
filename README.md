@@ -31,6 +31,6 @@ Do not open `index.html` straight from disk: browsers block ES modules on `file:
 
 ## Licence
 
-MIT, see [LICENSE](LICENSE). This project does not take issues or pull requests; fork it freely. The Notchup name and the logo (`assets/mark.svg`) are © Notchup Oy, all rights reserved. They are not covered by the MIT licence, so replace them in a fork.
+MIT, see [LICENSE](LICENSE). This project does not take issues or pull requests; fork it freely. The Notchup name, the logo (`assets/mark.svg`) and the share image (`assets/og.png`) are © Notchup Oy, all rights reserved. They are not covered by the MIT licence, so replace them in a fork.
 
 Made by [Notchup](https://notchup.fi).
