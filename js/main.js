@@ -25,6 +25,7 @@ const ui = {
   fromBtn: $('#from-btn'),
   toBtn: $('#to-btn'),
   fill: $('#fill'),
+  fullscreenBtn: $('#fullscreen-btn'),
   drawingBtn: $('#drawing-btn'),
   exitView: $('#exit-view'),
   detailsBtn: $('#details-btn'),
@@ -383,14 +384,20 @@ initRender();
 // Full screen and Drawing only: the toolbar and footer step aside. A floating Exit button is always
 // there, and Esc leaves Drawing only (the browser handles Esc in full screen itself).
 let drawingOnly = false;
+let wasFullscreen = false;
 function syncChrome() {
   const fs = Boolean(document.fullscreenElement);
+  const toggled = fs !== wasFullscreen;
+  wasFullscreen = fs;
   document.body.classList.toggle('is-fullscreen', fs);
   document.body.classList.toggle('is-drawing', drawingOnly);
   ui.drawingBtn.setAttribute('aria-pressed', String(drawingOnly));
   ui.exitView.hidden = !(fs || drawingOnly);
   ui.exitView.textContent = fs ? 'Exit full screen' : 'Exit drawing only';
   if (!fs && !drawingOnly) window.scrollTo(0, 0);
+  // Whatever had focus (the toolbar button, or Exit) is hidden now: put focus on what is still there.
+  // The page is a result only when it is shown; Start over moves focus itself.
+  if (toggled && view === 'result') (fs || drawingOnly ? ui.exitView : ui.drawingBtn).focus();
 }
 function setDrawingOnly(on, { refocus = false } = {}) {
   drawingOnly = on;
@@ -399,12 +406,13 @@ function setDrawingOnly(on, { refocus = false } = {}) {
   else if (refocus) ui.drawingBtn.focus();
 }
 document.addEventListener('fullscreenchange', syncChrome);
+// Full screen is offered wherever the browser supports it (the stage card offers it too when the outline does not fit).
+ui.fullscreenBtn.hidden = document.fullscreenEnabled !== true;
+ui.fullscreenBtn.addEventListener('click', goFullscreen);
 ui.drawingBtn.addEventListener('click', () => setDrawingOnly(true));
 ui.exitView.addEventListener('click', () => {
-  if (document.fullscreenElement) {
-    // The button hides itself when full screen ends: hand focus to what is still on screen.
-    document.exitFullscreen().finally(() => (drawingOnly ? ui.exitView : ui.drawingBtn).focus());
-  } else setDrawingOnly(false, { refocus: true });
+  if (document.fullscreenElement) document.exitFullscreen();
+  else setDrawingOnly(false, { refocus: true });
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && drawingOnly && !document.querySelector('dialog[open]')) setDrawingOnly(false, { refocus: true });
