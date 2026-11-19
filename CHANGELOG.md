@@ -6,10 +6,12 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- Works on phones and tablets: they can give their own size (sizes from 4 inches), the size field suggests 6.1" on a phone and 11" on a tablet, and the hint says where to find it. On screens under 768 px the result's options (Sample content, Full screen, Drawing only, Start over, Fine-tune, Details) sit in one Options menu, so the toolbar is one slim row; touch screens get 44 px tap targets.
 - Search and link previews: a sharper description, a canonical address, Open Graph and X card tags with a 1200 × 630 share image, structured data (a free web app by Notchup), `robots.txt` and `sitemap.xml`. Nothing is loaded from other sites; the privacy test allows the page's own address in this metadata only.
 
 ### Fixed
 
+- A typed size on a phone or tablet held upright was drawn sideways, so "how far it reaches past each edge" was wrong; it now follows the screen's orientation like a card measurement.
 - The bank card in Fine-tune is no longer cut off on small screens or high-density laptops: the drawer grows to fit the card at true size, a card wider than the window is drawn upright (with a note to hold it that way), and on a screen narrower than a card it is cut at the right edge so the top and bottom edges still line up. The slider now sits above the card, so it stays in reach on a phone.
 
 ## 0.1.0 – 2026-11-18

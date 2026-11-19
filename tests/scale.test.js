@@ -74,12 +74,21 @@ test('without a usable resolution the aspect ratio has to be given', () => {
 });
 
 test('sizes and resolutions are validated', () => {
-  assert.ok(validSize(21.5) && validSize(10) && validSize(100));
-  assert.ok(!validSize(9.9) && !validSize(100.1) && !validSize(NaN) && !validSize(null));
+  assert.ok(validSize(21.5) && validSize(4) && validSize(6.1) && validSize(100));
+  assert.ok(!validSize(3.9) && !validSize(100.1) && !validSize(NaN) && !validSize(null));
   assert.ok(usableResolution(1920, 1080) && usableResolution(1080, 1920) && usableResolution(3440, 1440));
   assert.ok(!usableResolution(0, 1080) && !usableResolution(1000, 100) && !usableResolution(NaN, 5));
 });
 
 test('the default scale is 96 px per inch', () => {
   near(DEFAULT_PX_PER_MM * 25.4, 96, 1e-9);
+});
+
+test('a typed size on a phone held upright is taller than it is wide', () => {
+  const phone = yourScreen({ sizeIn: 6.1, css: { width: 390, height: 844 }, dpr: 3 });
+  assert.ok(phone.heightMm > phone.widthMm);
+  near(phone.heightMm, 140.6, 0.5); // 6.1" at 844:390
+  const turned = yourScreen({ sizeIn: 6.1, css: { width: 844, height: 390 }, dpr: 3 });
+  near(turned.widthMm, phone.heightMm, 0.01);
+  near(turned.pxPerMm, phone.pxPerMm, 0.0001);
 });

@@ -184,6 +184,47 @@ select { width: 100%; }
 /* The arrow is decoration: the second declaration gives it an empty text alternative where supported; the first is the fallback for browsers that do not know that syntax. */
 .screen-btn::after { content: " ▾"; content: " ▾" / ""; }
 .tools { display: flex; flex-wrap: wrap; gap: 0.4rem 0.5rem; margin-left: auto; }
+/* Options: inline from 768 px (the wrapper steps aside); on smaller screens behind one button. */
+.options { display: contents; }
+.menu-btn { display: none; }
+@media (max-width: 767.98px) {
+  .toolbar { flex-wrap: nowrap; gap: 0.5rem; padding-block: 0.4rem; }
+  .toolbar .app-name, .toolbar .badge { display: none; }
+  .pair { flex: 0 1 auto; flex-wrap: nowrap; min-width: 0; gap: 0.3rem; }
+  .pair .screen-btn { flex: 0 1 auto; min-width: 0; padding-inline: 0.5rem; overflow: hidden; text-overflow: ellipsis; }
+  .toolbar button { min-height: 44px; }
+  .menu-btn { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; margin-left: auto; }
+  .options { display: none; }
+  .menu-btn { padding-inline: 0.6rem; }
+  .options.open {
+    position: absolute;
+    top: 100%;
+    right: 0.5rem;
+    z-index: 7;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: min(16rem, calc(100vw - 1rem));
+    padding: 0.5rem;
+    background: var(--brand-navy);
+    border: 1px solid rgb(243 229 171 / 0.35);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  }
+  .options .switch { min-height: 44px; padding: 0 0.7rem; }
+  .options .tools { flex-direction: column; flex-wrap: nowrap; gap: 0.25rem; margin-left: 0; }
+  .options .tools button { text-align: left; border-color: transparent; }
+  .options .tools button[aria-pressed=true] { border-color: rgb(243 229 171 / 0.55); }
+}
+/* Touch screens get full-size tap targets in the toolbar, inline or in the menu. */
+@media (pointer: coarse) {
+  .toolbar button { min-height: 44px; }
+}
+/* On the narrowest phones the Options button keeps only its icon; its name stays for screen readers. */
+@media (max-width: 400px) {
+  .menu-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .menu-btn { min-width: 44px; justify-content: center; }
+}
 .dot { display: inline-block; width: 0.5rem; height: 0.5rem; margin-left: 0.4rem; border-radius: 50%; background: var(--stage-gold); }
 .switch { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer; }
 .switch input {

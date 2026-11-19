@@ -2,6 +2,7 @@ import { initCalibrate } from './calibrate.js';
 import { createMemory, defaultName, matchProfile, signatureOf } from './memory.js';
 import { createSetup } from './setup.js';
 import { initDetails } from './details.js';
+import { initMenu } from './menu.js';
 import { draw, initRender, renderOverview } from './render.js';
 import { matchScreens, nativeResolution } from './detect.js';
 import { smallerThan, smallerThanSize } from './suggest.js';
@@ -225,6 +226,8 @@ function update() {
 
 // Resolution and aspect ratios live in the Details drawer. Clearing an edited resolution on a screen
 // that reports none falls back to 16:9, as the setup used to.
+initMenu($('#menu-btn'), $('#options'));
+
 const details = initDetails(ui.drawer, {
   onRename(sig, name) {
     if (memory.rename(sig, name)) refreshMemory();

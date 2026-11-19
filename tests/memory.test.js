@@ -60,7 +60,7 @@ test('cleanProfile drops entries a link could not hold', () => {
   assert.equal(cleanProfile({ ...office, name: '   ' }), null);
   assert.equal(cleanProfile({ ...office, sig: sig(0, 1080) }), null);
   assert.equal(cleanProfile({ ...office, sig: sig(1920, 1080, NaN) }), null);
-  assert.equal(cleanProfile({ ...office, size: 5 }), null, 'a size out of range and no other way');
+  assert.equal(cleanProfile({ ...office, size: 3 }), null, 'a size out of range and no other way');
   assert.equal(cleanProfile({ ...laptop, from: 'no-such-model' }), null);
   assert.equal(cleanProfile({ ...office, size: null, from: null, cal: null }), null);
   const card = cleanProfile({ ...office, size: 24, cal: 3.9 });

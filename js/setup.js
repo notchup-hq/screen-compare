@@ -10,7 +10,7 @@ import {
   groupedScreens, laptopModels, kindForDiagonal, otherChoice, STEP2_SIZES, SIZE_RATIO_CHOICES,
 } from './compare-options.js';
 import { SIZE_MAX_IN, SIZE_MIN_IN, round1, usableResolution, validSize } from './scale.js';
-import { parseSize, sizeStepper } from './size-field.js';
+import { parseSize, sizeStepper, typicalSize } from './size-field.js';
 import { rememberedLine } from './memory.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -98,7 +98,13 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
   const otherBtn = $(dialog, '#other-btn');
   const toOther = $(dialog, '#to-other');
   const otherSize = $(dialog, '#other-size');
-  const syncSizeAria = sizeStepper(sizeInput, $(dialog, '#size-minus'), $(dialog, '#size-plus'), { start: 24 });
+  // A phone or tablet is asked about its own size first, so the hint and the − and + start near it.
+  const typical = typicalSize({
+    short: Math.min(window.screen.width, window.screen.height),
+    coarse: window.matchMedia?.('(pointer: coarse)').matches === true,
+  });
+  sizeInput.placeholder = String(typical);
+  const syncSizeAria = sizeStepper(sizeInput, $(dialog, '#size-minus'), $(dialog, '#size-plus'), { start: typical });
   const syncOtherAria = sizeStepper(otherSize, $(dialog, '#other-minus'), $(dialog, '#other-plus'), { start: 22 });
   const otherError = $(dialog, '#other-error');
   const toSelect = $(dialog, '#to-select');
