@@ -14,35 +14,51 @@ const RULERS = {
 };
 
 const HOW = {
-  card: 'Hold a card against the screen and drag the slider until the card below is the same size as the real one.',
-  ruler: 'Hold a ruler against the screen with its 0 on the left end of the scale below, and drag the slider until the marks line up.',
+  card: 'Lay a card on the outline and slide until they match.',
+  upright: 'Lay a card upright on the outline and slide until they match.',
+  cut: 'Lay a card upright on the outline, its top at the top, and slide until the bottom edges match.',
+  ruler: 'Lay a ruler with its 0 on the first mark and slide until the marks line up.',
 };
 
-export function initCalibrate(onChange) {
+/** One tap of − or +, in CSS px per mm (under 1 px on a card). */
+const NUDGE = 0.01;
+
+/**
+ * The fitting screen: the card (or ruler) and the slider first, so on a phone they fit without
+ * scrolling, then "Set", which closes the drawer (`onDone`). Everything else is under "More options",
+ * open from 768 px.
+ */
+export function initCalibrate(onChange, onDone) {
   const body = document.getElementById('cal-body');
   body.innerHTML = `
-    <p>This adjusts the scale so the outline is truly real size on this screen.</p>
-    <fieldset class="cal-with">
-      <legend>Match with</legend>
-      <label><input type="radio" name="cal-with" value="card" checked> A card</label>
-      <label><input type="radio" name="cal-with" value="cm"> A ruler in cm</label>
-      <label><input type="radio" name="cal-with" value="in"> A ruler in inches</label>
-    </fieldset>
-    <p id="cal-how"></p>
-    <div class="cal-row">
-      <label class="cal-slider">Scale
-        <input type="range" id="cal-range" min="2" max="10" step="0.01">
-      </label>
-      <button type="button" id="cal-reset">Reset fine-tune</button>
-    </div>
-    <p class="cal-size" id="cal-size"></p>
-    <p class="cal-turn" id="cal-turn" hidden></p>
+    <p id="cal-how" class="cal-how"></p>
     <div class="card-stage">
       <div class="card" id="cal-card" aria-hidden="true"></div>
       <svg class="ruler" id="cal-ruler" aria-hidden="true" focusable="false" hidden></svg>
     </div>
-    <label class="remember" id="cal-remember-row"><input type="checkbox" id="cal-remember"> <span>Remember this screen on this browser</span></label>
-    <p class="cal-note" id="cal-note">Any bank, ID, driving licence, loyalty or library card works: they are all ${BANK_CARD_MM.width} × ${BANK_CARD_MM.height} mm (ISO/IEC 7810 ID-1).</p>`;
+    <div class="cal-row">
+      <button type="button" class="step-btn" id="cal-minus" aria-label="Smaller" aria-controls="cal-range"><span aria-hidden="true">&minus;</span></button>
+      <label class="cal-slider"><span class="visually-hidden">Size of the drawing</span>
+        <input type="range" id="cal-range" min="2" max="10" step="0.01">
+      </label>
+      <button type="button" class="step-btn" id="cal-plus" aria-label="Larger" aria-controls="cal-range"><span aria-hidden="true">+</span></button>
+    </div>
+    <p class="cal-size" id="cal-size" aria-live="polite"></p>
+    <button type="button" class="primary cal-set" id="cal-set">Set</button>
+    <details class="cal-more" id="cal-more">
+      <summary>More options</summary>
+      <fieldset class="cal-with">
+        <legend>Match with</legend>
+        <label><input type="radio" name="cal-with" value="card" checked> A card</label>
+        <label><input type="radio" name="cal-with" value="cm"> A ruler in cm</label>
+        <label><input type="radio" name="cal-with" value="in"> A ruler in inches</label>
+      </fieldset>
+      <label class="remember" id="cal-remember-row"><input type="checkbox" id="cal-remember"> <span>Remember this screen on this browser</span></label>
+      <p class="cal-note" id="cal-note">Any bank, ID, driving licence, loyalty or library card works: they are all ${BANK_CARD_MM.width} × ${BANK_CARD_MM.height} mm (ISO/IEC 7810 ID-1).</p>
+      <p>This adjusts the scale so the outline is truly real size on this screen.</p>
+      <button type="button" id="cal-reset">Reset fine-tune</button>
+    </details>`;
+  if (window.matchMedia?.('(min-width: 768px)').matches) body.querySelector('#cal-more').open = true;
 
   const card = body.querySelector('#cal-card');
   const ruler = body.querySelector('#cal-ruler');
@@ -50,10 +66,14 @@ export function initCalibrate(onChange) {
   const note = body.querySelector('#cal-note');
   const range = body.querySelector('#cal-range');
   const size = body.querySelector('#cal-size');
-  const turn = body.querySelector('#cal-turn');
   const drawer = body.closest('dialog');
 
   range.addEventListener('input', () => onChange(Number(range.value)));
+  const nudge = (dir) => onChange(Math.min(Number(range.max), Math.max(Number(range.min), Number(range.value) + dir * NUDGE)));
+  body.querySelector('#cal-minus').addEventListener('click', () => nudge(-1));
+  body.querySelector('#cal-plus').addEventListener('click', () => nudge(1));
+  // Set confirms the drawing matches, moved or not: the scale on screen becomes the measurement.
+  body.querySelector('#cal-set').addEventListener('click', () => { onChange(Number(range.value)); onDone(); });
   const reset = body.querySelector('#cal-reset');
   reset.addEventListener('click', () => { onChange(null); range.focus(); });
 
@@ -75,7 +95,6 @@ export function initCalibrate(onChange) {
     card.hidden = !isCard;
     ruler.toggleAttribute('hidden', isCard); // an <svg> has no hidden property
     note.hidden = !isCard;
-    how.textContent = isCard ? HOW.card : HOW.ruler;
     let drawn;
     if (isCard) {
       const fit = cardFit(scale, room);
@@ -83,16 +102,14 @@ export function initCalibrate(onChange) {
       card.style.height = `${fit.height}px`;
       card.style.borderRadius = `${CARD_RADIUS_MM * scale}px`;
       drawer?.style.setProperty('--card-w', `${Math.min(fit.width, fit.room)}px`);
-      turn.hidden = fit.layout === 'flat';
-      turn.textContent = fit.layout === 'upright'
-        ? 'Hold the card upright: it fits this screen that way.'
-        : fit.layout === 'cut' ? 'This screen is narrower than a card: hold it upright and match the top and bottom edges.' : '';
+      // One line says how to lay the card: flat, upright, or upright and cut on a screen narrower than a card.
+      how.textContent = fit.layout === 'flat' ? HOW.card : HOW[fit.layout];
       drawn = `Card drawn ${Math.round(BANK_CARD_MM.width * scale)} pixels wide`;
     } else {
       const fit = rulerFit(scale, room, mode);
       drawRuler(ruler, scale, fit);
       drawer?.style.setProperty('--card-w', `${Math.min(fit.px + RULER_PAD * 2, room)}px`);
-      turn.hidden = true;
+      how.textContent = HOW.ruler;
       drawn = `${fit.count} ${RULERS[mode].name} drawn ${Math.round(fit.px)} pixels long`;
     }
     // The screen size this scale implies (the same maths as a card measurement everywhere else).
