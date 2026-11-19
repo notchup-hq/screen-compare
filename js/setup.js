@@ -7,11 +7,11 @@
 
 import { resolveScreen } from './state.js';
 import {
-  groupedScreens, laptopModels, kindOfYours, kindsToShow, otherChoice, step2KindOf, facing, KINDS, STEP2_SIZES,
+  ownModels, screensOfKinds, kindOfYours, kindsToShow, otherChoice, step2KindOf, facing, KINDS, STEP2_SIZES,
   SIZE_RATIO_CHOICES,
 } from './compare-options.js';
 import { SIZE_MAX_IN, SIZE_MIN_IN, round1, usableResolution, validSize } from './scale.js';
-import { parseSize, sizeStepper, typicalSize } from './size-field.js';
+import { deviceKind, parseSize, sizeStepper, typicalSize } from './size-field.js';
 import { rememberedLine } from './memory.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -101,7 +101,10 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
   const otherSize = $(dialog, '#other-size');
   // A phone or tablet is asked about its own size first, so the hint and the − and + start near it.
   const touch = window.matchMedia?.('(pointer: coarse)').matches === true;
-  const typical = typicalSize({ short: Math.min(window.screen.width, window.screen.height), coarse: touch });
+  const device = { short: Math.min(window.screen.width, window.screen.height), coarse: touch };
+  const typical = typicalSize(device);
+  // A phone is offered phone models for its own screen; everything else laptop models.
+  const onPhone = deviceKind(device) === 'phone';
   const allBox = $(dialog, '#all-sizes');
   sizeInput.placeholder = String(typical);
   const syncSizeAria = sizeStepper(sizeInput, $(dialog, '#size-minus'), $(dialog, '#size-plus'), { start: typical });
@@ -114,10 +117,13 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
   let otherActive = null;
 
   const nativeUsable = native && usableResolution(native[0], native[1]) ? native : null;
-  const models = laptopModels();
+  const models = ownModels(onPhone ? 'phone' : 'laptop');
   const modelIds = new Set(models.flatMap((g) => g.screens.map((s) => s.id)));
-  optionList(modelSelect, models, 'Choose your laptop');
-  optionList(toSelect, groupedScreens(), 'Choose a model…');
+  optionList(modelSelect, models, onPhone ? 'Choose your phone' : 'Choose your laptop');
+  if (onPhone) {
+    modelBtn.textContent = 'Pick your phone model';
+    $(dialog, 'label[for=model-select]').textContent = 'Your phone model';
+  }
 
   // What the visitor has told us about their own screen. Only one is used, strongest first: a card
   // measurement (a draft until applied), a preset (a laptop model, or a generic one from the link that
@@ -183,9 +189,10 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
     // "Remember this screen" sits right under the main button; a remembered screen has its own links instead.
     rememberRow.hidden = !canRemember || isRemembered;
     (known ? knownOk : sizeNext).after(rememberRow);
-    // One link at a time: the card at first, the model list after "No, change it".
+    // One link at a time: the card at first, the model list after "No, change it". A phone is never
+    // detected, so it gets its model list from the start, next to the card.
     cardBtn.hidden = changing;
-    modelBtn.hidden = !changing || !modelWrap.hidden;
+    modelBtn.hidden = !(changing || onPhone) || !modelWrap.hidden;
   }
 
   function refocus() {
@@ -337,6 +344,10 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
 
   function renderSizes() {
     const kinds = kindsToShow(kind, allBox.checked);
+    // The model list follows the buttons: your kind, or everything with "Show all sizes".
+    const chosen = toSelect.value;
+    optionList(toSelect, screensOfKinds(kinds), 'Choose a model…');
+    if ([...toSelect.options].some((o) => o.value === chosen)) toSelect.value = chosen;
     sizes.replaceChildren(...kinds.map((k) => {
       if (kinds.length === 1) return sizeGrid(k);
       // With all sizes shown, each kind gets a caption; on its own it needs none.
@@ -387,16 +398,15 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
 
   function renderTo() {
     kind = kindOfYours(diagonalOf(readYour()), { touch });
-    // A size from another kind's buttons (say a laptop from a phone) opens with all sizes shown.
-    const toKind = step2KindOf(currentTo);
-    allBox.checked = Boolean(toKind && toKind !== kind);
+    // A screen of another kind (say a laptop from a phone) opens with all sizes shown.
+    const target = currentTo && resolveScreen(currentTo);
+    allBox.checked = Boolean(target && !target.custom && target.kind !== kind);
     renderSizes();
     otherSize.value = '';
     toSelect.value = '';
     keepCustom = null;
-    // Something chosen before that is not one of the four buttons: show it under "Other size".
-    const target = currentTo && resolveScreen(currentTo);
-    const onButton = Boolean(toKind);
+    // Something chosen before that is not one of the buttons: show it under "Other size".
+    const onButton = Boolean(step2KindOf(currentTo));
     setOther(Boolean(target && !onButton));
     if (target && !onButton) {
       if (target.custom) {
@@ -417,7 +427,7 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
     onApply({ ...your, to, remember: canRemember ? rememberBox.checked : null });
   }
 
-  allBox.addEventListener('change', renderSizes);
+  allBox.addEventListener('change', () => { renderSizes(); syncOther(); });
   sizes.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-spec]');
     if (b) apply(b.dataset.spec);

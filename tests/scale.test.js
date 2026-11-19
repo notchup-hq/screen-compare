@@ -92,3 +92,12 @@ test('a typed size on a phone held upright is taller than it is wide', () => {
   near(turned.widthMm, phone.heightMm, 0.01);
   near(turned.pxPerMm, phone.pxPerMm, 0.0001);
 });
+
+test('a phone model held upright gets the same scale as held sideways', () => {
+  const model = resolveScreen('ip17');
+  const up = yourScreen({ preset: model, css: { width: 402, height: 874 }, dpr: 3 });
+  const side = yourScreen({ preset: model, css: { width: 874, height: 402 }, dpr: 3 });
+  assert.ok(up.heightMm > up.widthMm);
+  near(up.pxPerMm, side.pxPerMm, 0.0001);
+  near(up.pxPerMm, 2622 / 3 / model.widthMm, 0.05); // CSS px across the long side
+});

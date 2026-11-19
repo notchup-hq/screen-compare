@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanSizeText, isClearKey, parseSize, stepDirection, stepSize, typicalSize } from '../js/size-field.js';
+import { cleanSizeText, isClearKey, parseSize, stepDirection, stepSize, typicalSize, deviceKind } from '../js/size-field.js';
 
 test('parseSize accepts a dot or a comma and rejects the rest', () => {
   assert.equal(parseSize('15,6'), 15.6);
@@ -68,4 +68,11 @@ test('typicalSize suggests a phone, tablet or monitor size', () => {
   assert.equal(typicalSize({ short: 820, coarse: true }), 11);
   assert.equal(typicalSize({ short: 390, coarse: false }), 24, 'a narrow desktop window is not a phone');
   assert.equal(typicalSize({ short: 1080, coarse: false }), 24);
+});
+
+test('deviceKind tells a phone or tablet from its short side, touch screens only', () => {
+  assert.equal(deviceKind({ short: 412, coarse: true }), 'phone');
+  assert.equal(deviceKind({ short: 810, coarse: true }), 'tablet');
+  assert.equal(deviceKind({ short: 412, coarse: false }), null);
+  assert.equal(deviceKind({ short: 1200, coarse: true }), null);
 });

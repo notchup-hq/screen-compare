@@ -61,7 +61,10 @@ export function yourScreen({ preset = null, sizeIn = null, res = null, ratio = n
 
   if (validSize(sizeIn)) return upright(sizedScreen({ sizeIn, res, ratio, css, dpr }), css);
 
-  if (preset) return { ...preset, basis: 'model', pxPerMm: pxPerMm(css.width, preset.widthMm) };
+  if (preset) {
+    const turned = upright({ ...preset }, css); // a phone model held upright
+    return { ...turned, basis: 'model', pxPerMm: pxPerMm(css.width, turned.widthMm) };
+  }
   return null;
 }
 
