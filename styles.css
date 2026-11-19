@@ -568,11 +568,11 @@ legend, .other label { display: block; padding: 0; margin-bottom: 0.35rem; font-
 .key-from { border-color: var(--muted); }
 .key-to { border-color: var(--gauge); background: var(--gauge-soft); }
 
-/* Calibration: the bank card at true card size */
+/* Calibration: the card at true size */
 /* Never scrolled sideways: a card wider than the window is drawn upright, and on a screen narrower
    than a card it is cut at the right edge, so its top and bottom edges still line up. */
 .card-stage { padding: 0.5rem 0; overflow: hidden; }
-/* The fine-tune drawer grows to fit the bank card at true card size, up to the full window. */
+/* The fine-tune drawer grows to fit the card at true size, up to the full window. */
 .drawer.drawer-tune { width: min(100vw, max(30rem, calc(var(--card-w, 0px) + 2.5rem + 1px))); }
 .cal-turn { font-weight: 600; }
 .card {
@@ -586,6 +586,14 @@ legend, .other label { display: block; padding: 0; margin-bottom: 0.35rem; font-
 .cal-slider { display: block; margin-bottom: 0.9rem; font-weight: 600; font-size: 0.9rem; }
 .cal-slider input { display: block; width: 100%; margin: 0.4rem 0 0; accent-color: var(--gauge); }
 .cal-note { font-size: 0.85rem; color: var(--muted); }
+.cal-with { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; margin: 0 0 0.6rem; padding: 0; border: 0; }
+.cal-with legend { padding: 0; margin-bottom: 0.25rem; font-weight: 600; font-size: 0.9rem; }
+.cal-with label { display: flex; align-items: center; gap: 0.4rem; min-height: 2.75rem; cursor: pointer; }
+.cal-with input { margin: 0; width: 1.1rem; height: 1.1rem; accent-color: var(--gauge); }
+.ruler { display: block; overflow: visible; }
+.ruler-edge, .ruler-tick { stroke: var(--gauge); stroke-width: 1; }
+.ruler-edge, .ruler-whole { stroke-width: 2; }
+.ruler-num { fill: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
 #cal-body p { margin: 0 0 0.6rem; }
 
 /* All motion lives here. With reduced motion none of it applies and the end state shows at once. */

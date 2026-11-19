@@ -1,5 +1,5 @@
 // The setup dialog: two plain questions, one per step. Step 1 asks how big your screen is (a number
-// of inches, or a laptop model it already knows, or a bank-card measurement). Step 2 asks which size
+// of inches, or a laptop model it already knows, or a card measurement). Step 2 asks which size
 // you are thinking of: four big buttons that go straight to the result, and one link for any other
 // size or a specific model. Everything technical lives in the Details drawer (js/details.js).
 // Plain controls only; the page owns the state and gets the result through
@@ -66,7 +66,7 @@ function sizeButton({ preset, label, name }, screen, scale, boxHeight) {
  * @param {HTMLDialogElement} dialog
  * @param {object} deps
  * @param {(choice: object) => void} deps.onApply the visitor finished: { cal | from | size/res/ratio, to, remember }
- * @param {(draft: { your: object|null, cal: number|null }) => void} deps.onMeasure "Measure with a bank card" was pressed
+ * @param {(draft: { your: object|null, cal: number|null }) => void} deps.onMeasure "Measure with a card" was pressed
  * @param {() => (object|null)} deps.onForget "Forget this screen": deletes the remembered screen and returns it, for Undo
  * @param {(profile: object) => boolean} deps.onRestore Undo: saves that screen again, true when it worked
  * @param {number[]|null} deps.native the screen's resolution as the browser reports it, [long, short], or null
