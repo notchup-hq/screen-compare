@@ -8,7 +8,7 @@ import { round1, validSize } from './scale.js';
 import { parseSize } from './size-field.js';
 
 /** Order of the headings in the screen lists. */
-export const GROUPS = ['Apple', 'Framework', 'Microsoft', 'Generic laptops', 'Monitors', 'Tablets', 'Phones'];
+export const GROUPS = ['Apple', 'Framework', 'Microsoft', 'Generic laptops', 'Monitors', 'Tablets', 'iPhone', 'Galaxy', 'Pixel', 'Phones'];
 
 /** Aspect ratios Details offers for a generic laptop size you compare with. */
 export const RATIO_CHOICES = RATIOS.filter((r) => ['16x10', '16x9', '3x2'].includes(r.id));
@@ -147,9 +147,14 @@ export function groupedScreens(screens = SCREENS) {
     .filter((g) => g.screens.length > 0);
 }
 
-/** Laptop models with a spec source, grouped: the list behind "Pick a model…" for your own screen. */
-export function laptopModels() {
-  return groupedScreens(SCREENS.filter((s) => s.kind === 'laptop' && s.source));
+/** Models with a spec source, grouped: the list behind "Pick your laptop (or phone) model" for your own screen. */
+export function ownModels(kind = 'laptop') {
+  return groupedScreens(SCREENS.filter((s) => s.kind === kind && s.source));
+}
+
+/** Everything of the given kinds, grouped: the model list under "Other size or a specific model". */
+export function screensOfKinds(kinds) {
+  return groupedScreens(SCREENS.filter((s) => kinds.includes(s.kind)));
 }
 
 /** The four generic laptop sizes: the buttons of the second question, and the sizes whose ratio Details can change. */

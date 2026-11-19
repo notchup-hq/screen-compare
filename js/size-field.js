@@ -56,9 +56,13 @@ export function stepSize(current, dir, start = 24) {
  * CSS px: a phone or a tablet (a touch screen) starts near its own size, anything else at a 24" monitor.
  */
 export function typicalSize({ short, coarse }) {
-  if (coarse && short < 500) return 6.1;
-  if (coarse && short < 1100) return 11;
-  return 24;
+  return { phone: 6.1, tablet: 11 }[deviceKind({ short, coarse })] ?? 24;
+}
+
+/** 'phone' or 'tablet' for a touch screen whose short side is under 500 or 1100 CSS px, else null. */
+export function deviceKind({ short, coarse }) {
+  if (!coarse) return null;
+  return short < 500 ? 'phone' : short < 1100 ? 'tablet' : null;
 }
 
 /**

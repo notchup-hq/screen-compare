@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SCREENS } from '../js/screens.js';
 import { resolveScreen } from '../js/state.js';
-import { GROUPS, LAPTOP_SIZES, STEP2_SIZES, groupedScreens, laptopModels, kindOfYours, kindsToShow, step2KindOf, handheld, facing, otherSizeSpec, otherChoice, laptopSizeFor, laptopSpec } from '../js/compare-options.js';
+import { GROUPS, LAPTOP_SIZES, STEP2_SIZES, groupedScreens, ownModels, screensOfKinds, kindOfYours, kindsToShow, step2KindOf, handheld, facing, otherSizeSpec, otherChoice, laptopSizeFor, laptopSpec } from '../js/compare-options.js';
 
 test('every preset belongs to a known group, and the lists keep them all', () => {
   for (const s of SCREENS) assert.ok(GROUPS.includes(s.group), `${s.id}: ${s.group}`);
@@ -12,10 +12,24 @@ test('every preset belongs to a known group, and the lists keep them all', () =>
 });
 
 test('the model list for your own screen is laptop models with a source', () => {
-  const ids = laptopModels().flatMap((g) => g.screens.map((s) => s.id));
+  const ids = ownModels().flatMap((g) => g.screens.map((s) => s.id));
   assert.ok(ids.includes('mbp14') && ids.includes('fw13') && ids.includes('sl15'));
   assert.ok(!ids.includes('g14') && !ids.includes('m24'));
-  assert.deepEqual(laptopModels().map((g) => g.group), ['Apple', 'Framework', 'Microsoft']);
+  assert.deepEqual(ownModels().map((g) => g.group), ['Apple', 'Framework', 'Microsoft']);
+});
+
+test('a phone picks from phone models, by maker', () => {
+  assert.deepEqual(ownModels('phone').map((g) => g.group), ['iPhone', 'Galaxy', 'Pixel']);
+  for (const s of ownModels('phone').flatMap((g) => g.screens)) {
+    assert.ok(s.source && s.diagonalIn > 5.5 && s.diagonalIn < 7.5 && s.resX > s.resY, s.id);
+    assert.match(s.short, /\d(\.\d+)?"$/, s.id);
+  }
+});
+
+test('the model list under "Other size" holds only the kinds shown', () => {
+  const groups = screensOfKinds(['phone']).map((g) => g.group);
+  assert.deepEqual(groups, ['iPhone', 'Galaxy', 'Pixel', 'Phones']);
+  assert.equal(screensOfKinds(['phone', 'tablet', 'laptop', 'monitor']).flatMap((g) => g.screens).length, SCREENS.length);
 });
 
 test('the second question offers four generic sizes by the kind of your screen', () => {
