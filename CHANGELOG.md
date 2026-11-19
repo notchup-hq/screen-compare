@@ -16,7 +16,7 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Fixed
 
-- The footer on phones is three tidy centred lines instead of a ragged wrap.
+- On phones the start page fits without scrolling: the footer is one short line and "What is this?" no longer reserves empty room.
 - Step 1's Next is no longer greyed out while the size field is empty: the grey example size next to a disabled button read as "that size is not allowed". Next now says what is missing.
 - "Bank card" is now just "card": any bank, ID, driving licence, loyalty or library card has the same size, so people who pay by phone can measure too.
 - A typed size on a phone or tablet held upright was drawn sideways, so "how far it reaches past each edge" was wrong; it now follows the screen's orientation like a card measurement.
