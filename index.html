@@ -19,8 +19,8 @@
       <span class="app-name">Screen compare</span>
       <span class="badge">Preview</span>
     </div>
-    <h1>Thinking of a smaller laptop?</h1>
-    <p class="lede">See it at real size, right on the screen you have now.</p>
+    <h1>How big is that screen, really?</h1>
+    <p class="lede">See any laptop or monitor at real size, right on the screen you have now.</p>
 
     <svg class="art" viewBox="0 0 320 230" role="img" aria-label="A laptop screen with a smaller gold outline shrinking inside it, labelled 16 inch to 14 inch.">
       <rect class="art-screen" x="20" y="8" width="280" height="175" rx="10"/>
@@ -31,7 +31,7 @@
       <text class="art-label" x="160" y="226" text-anchor="middle">16" → 14"</text>
     </svg>
 
-    <button type="button" class="primary" id="start-btn">Compare my screen</button>
+    <button type="button" class="primary" id="start-btn">Compare screens</button>
     <noscript>
       <p class="no-js">This page needs JavaScript to measure and draw screens. You say which laptop you have and which smaller one you are considering, and it draws the smaller screen as an outline at its real physical size on your screen. Nothing is stored and nothing leaves your browser, with or without JavaScript.</p>
     </noscript>
@@ -69,10 +69,13 @@
     <a href="https://notchup.fi">Made by Notchup · Knock it up a notch!</a>
     <a href="https://github.com/notchup-hq/screen-compare">Source on GitHub</a>
     <span>MIT licence</span>
+    <span>No cookies, no tracking. Remembered screens stay in this browser.</span>
     <a id="version" href="https://github.com/notchup-hq/screen-compare/blob/main/CHANGELOG.md">Changelog</a>
   </footer>
 
   <!-- 2. Setup: two questions, one per step. Plain controls; no form element, nothing is submitted. -->
+  <p class="visually-hidden" id="remember-live" role="status"></p>
+
   <dialog class="dialog" id="setup" aria-labelledby="you-h">
     <div class="dialog-body">
       <div class="dialog-top">
@@ -85,8 +88,10 @@
 
         <div id="you-known" hidden>
           <p class="hero"><svg class="tick" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span id="known-text"></span></p>
+          <p class="note" id="known-remembered" hidden></p>
           <button type="button" class="primary" id="known-ok">That's right</button>
           <button type="button" class="link-btn" id="known-change">No, change it</button>
+          <button type="button" class="link-btn" id="known-forget" hidden>Forget this screen</button>
         </div>
 
         <div id="you-ask">
@@ -105,6 +110,7 @@
             <p><strong>Not sure?</strong> Measure with a bank card: every bank card is the same size (8.56 × 5.4 cm), so you can match one on screen and we take the scale from that.</p>
           </details>
           <button type="button" class="primary" id="size-next">Next</button>
+          <label class="remember" id="remember-row" hidden><input type="checkbox" id="remember"> <span>Remember this screen on this browser</span></label>
           <div class="model-wrap" id="model-wrap" hidden>
             <label class="visually-hidden" for="model-select">Your laptop model</label>
             <select id="model-select"></select>
@@ -120,7 +126,7 @@
         <details class="hint">
           <summary>How accurate is this?</summary>
           <p>The outline is drawn at real size, usually within a few millimetres. It's off if your browser zoom isn't 100 % (Ctrl+0 resets it), or if the size you gave isn't right. The bank card check in Details makes it exact.</p>
-          <p>Nothing you enter leaves this page. No cookies, no tracking.</p>
+          <p>Nothing you enter leaves this page. No cookies, no tracking. Your screens are remembered in this browser only if you ask, and never leave it.</p>
         </details>
         <button type="button" class="link-btn" id="other-btn" aria-expanded="false" aria-controls="to-other">Other size or a specific model</button>
         <div class="to-other" id="to-other" hidden>
@@ -139,6 +145,7 @@
           <button type="button" class="primary" id="to-show" disabled>Show</button>
         </div>
       </section>
+      <p class="toast" id="setup-toast" role="status" hidden><span>Forgotten</span> <button type="button" class="inline-link" id="toast-undo">Undo</button></p>
     </div>
   </dialog>
 
@@ -174,11 +181,18 @@
           <legend>Aspect ratio of the compared screen</legend>
         </fieldset>
       </section>
+      <section class="remembered" id="remembered" aria-labelledby="remembered-h" hidden>
+        <h3 id="remembered-h">Remembered screens</h3>
+        <ul class="remembered-list" id="remembered-list"></ul>
+        <p class="note" id="remembered-empty">None yet. Tick "Remember this screen on this browser" when you pick your screen.</p>
+        <button type="button" class="link-btn" id="remembered-clear" hidden>Forget all</button>
+        <p class="note" id="remembered-status" role="status" tabindex="-1"></p>
+      </section>
       <section class="notes" aria-labelledby="notes-h">
         <h3 id="notes-h">How accurate is this?</h3>
         <p>Browsers cannot read the physical size of a screen, but they do report its resolution. With the size in inches that gives the scale exactly: pixels per inch is the diagonal in pixels divided by the diagonal in inches. The size is the one you typed, the one of the laptop model you picked, or the one you measured with a bank card (Fine-tune), which is the most direct.</p>
-        <p>If the screen's resolution matches a known laptop, the page suggests that model and fills in its size; for monitors and anything else it never guesses a size. Browser zoom and display scaling change what the browser reports, so for a model the page warns when it looks off. Check with a bank card when in doubt. It all runs in your browser; nothing is sent or stored.</p>
-        <p>Nothing is stored and nothing leaves your browser. Your choices live in this page's link, so you can share it. Bookmark this page to keep this comparison; nothing else is saved.</p>
+        <p>If the screen's resolution matches a known laptop, the page suggests that model and fills in its size; for monitors and anything else it never guesses a size. Browser zoom and display scaling change what the browser reports, so for a model the page warns when it looks off. Check with a bank card when in doubt. It all runs in your browser; nothing is sent anywhere.</p>
+        <p>No cookies, no tracking. Your screens are remembered in this browser only if you ask, and never leave it. Your choices live in this page's link, so you can share it; bookmark this page to keep a comparison.</p>
       </section>
     </div>
     <div id="panel-tune" hidden>

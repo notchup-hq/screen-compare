@@ -20,7 +20,7 @@ function radioChip(name, value, label) {
 }
 
 /** @param {HTMLElement} root the drawer, with the markup of #adjust in it */
-export function initDetails(root, { onChange }) {
+export function initDetails(root, { onChange, onRename, onDelete, onClear }) {
   const $ = (sel) => root.querySelector(sel);
   const section = $('#adjust');
   const resRow = $('#adj-res');
@@ -58,7 +58,71 @@ export function initDetails(root, { onChange }) {
   ratioSet.addEventListener('change', (e) => onChange({ ratio: e.target.value }));
   toRatioSet.addEventListener('change', (e) => onChange({ to: specFor(toPill, e.target.value) }));
 
+  // Remembered screens: one row per profile. The rows are rebuilt only when the list changes, so a
+  // name being typed is never replaced under the cursor.
+  const memSection = $('#remembered');
+  const memList = $('#remembered-list');
+  const memEmpty = $('#remembered-empty');
+  const memClear = $('#remembered-clear');
+  let memKey = '';
+
+  function memRow(p, i, isThis) {
+    const li = document.createElement('li');
+    li.className = 'remembered-row';
+    const id = `remembered-name-${i}`;
+    const label = document.createElement('label');
+    label.htmlFor = id;
+    label.textContent = 'Name';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = id;
+    input.maxLength = 40;
+    input.value = p.name;
+    input.autocomplete = 'off';
+    input.addEventListener('change', () => {
+      if (input.value.trim()) onRename(p.sig, input.value);
+      else input.value = p.name; // a name can't be empty
+    });
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.textContent = 'Delete';
+    del.setAttribute('aria-label', `Delete ${p.name}`);
+    del.addEventListener('click', () => {
+      // Keep keyboard focus in the list: the next row, else the one before, else "Forget all".
+      const rows = [...memList.children];
+      const at = rows.indexOf(li);
+      const target = rows[at + 1] ? at : at - 1; // the rows are rebuilt, so count from the top
+      onDelete(p.sig);
+      const el = target >= 0 ? document.getElementById(`remembered-name-${target}`) : null;
+      (el ?? root.querySelector('#drawer-close'))?.focus();
+    });
+    li.append(label, input);
+    if (isThis) {
+      const here = document.createElement('span');
+      here.className = 'here';
+      here.textContent = 'This screen';
+      li.append(here);
+    }
+    li.append(del);
+    return li;
+  }
+  memClear.addEventListener('click', () => { onClear(); $('#remembered-status').focus(); });
+
   return {
+    /** `available`: storage works at all; `profiles`: newest first; `currentSig`: the screen in use. */
+    syncRemembered({ available, profiles, currentSig }) {
+      memSection.hidden = !available;
+      if (!available) return;
+      const same = (a, b) => a.w === b.w && a.h === b.h && Math.abs(a.dpr - b.dpr) <= 0.01;
+      const key = JSON.stringify([profiles.map((p) => [p.sig, p.name]), currentSig]);
+      memEmpty.hidden = profiles.length > 0;
+      memClear.hidden = profiles.length === 0;
+      if (key === memKey) return;
+      memKey = key;
+      const focusedId = memList.contains(document.activeElement) ? document.activeElement.id : null;
+      memList.replaceChildren(...profiles.map((p, i) => memRow(p, i, same(p.sig, currentSig))));
+      if (focusedId) document.getElementById(focusedId)?.focus();
+    },
     /**
      * basis: 'card' | 'size' | 'model'; res: the resolution in use, if any; edited: the resolution typed here, as typed, or null;
      * ratio: the assumed ratio id of your screen; to: the compared screen's spec.

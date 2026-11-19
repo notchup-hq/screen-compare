@@ -19,6 +19,7 @@ export function initCalibrate(onChange) {
       </label>
       <button type="button" id="cal-reset">Reset fine-tune</button>
     </div>
+    <label class="remember" id="cal-remember-row"><input type="checkbox" id="cal-remember"> <span>Remember this screen on this browser</span></label>
     <p class="cal-note">Card: ${BANK_CARD_MM.width} × ${BANK_CARD_MM.height} mm (ISO/IEC 7810 ID-1).</p>`;
 
   const card = body.querySelector('#cal-card');
