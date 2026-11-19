@@ -6,6 +6,7 @@
 
 import { fitsBox, fitsInside, formatCm, overflowPerSide } from './geometry.js';
 import { sizeLabel } from './intro.js';
+import { ACCURACY_TEXT } from './accuracy.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -88,6 +89,23 @@ function chipText(from, to, pct) {
     : `${sizeLabel(to)} is ${pct} % of your screen's area`;
 }
 
+/** The area chip with the accuracy line under it. "Check with a card" only when the size is just assumed. */
+function chipStack(from, to, pct, { accuracy, onCheckCard }) {
+  const stack = el('div', 'chip-stack');
+  const chip = el('p', 'chip', chipText(from, to, pct));
+  chip.setAttribute('aria-hidden', 'true');
+  const line = el('p', `accuracy acc-${accuracy}`);
+  line.append(el('span', '', ACCURACY_TEXT[accuracy]));
+  if (accuracy === 'assumed') {
+    const b = el('button', 'link-btn', 'Check with a card');
+    b.type = 'button';
+    b.addEventListener('click', onCheckCard);
+    line.append(' ', b);
+  }
+  stack.append(chip, line);
+  return stack;
+}
+
 function card({ title, text, from, to, canFullscreen, onFullscreen, inFullscreen }) {
   const c = el('section', 'fit-card');
   const id = 'fit-h';
@@ -111,7 +129,7 @@ function card({ title, text, from, to, canFullscreen, onFullscreen, inFullscreen
   return c;
 }
 
-/** Draw (or redraw) the stage. `args` = { from, to, scale, fill, pct, canFullscreen, onFullscreen }. */
+/** Draw (or redraw) the stage. `args` = { from, to, scale, fill, pct, accuracy, onCheckCard, canFullscreen, onFullscreen }. */
 export function draw(args) {
   last = args;
   const stage = document.getElementById('stage');
@@ -148,7 +166,7 @@ export function draw(args) {
     return;
   }
   if (!fits) {
-    drawEdges(stage, from, to, tw, th, fill, scale);
+    drawEdges(stage, from, to, tw, th, fill, scale, pct, args);
     return;
   }
   if (!roomy && !tight) {
@@ -168,14 +186,12 @@ export function draw(args) {
   frame.style.height = `${th}px`;
   const outline = el('div', 'outline target');
   if (fill) outline.append(sampleDesktop(to, scale));
-  const chip = el('p', 'chip', chipText(from, to, pct));
-  chip.setAttribute('aria-hidden', 'true');
-  frame.append(outline, dimension('dim-w', formatCm(to.widthMm)), dimension('dim-h', formatCm(to.heightMm)), chip);
+  frame.append(outline, dimension('dim-w', formatCm(to.widthMm)), dimension('dim-h', formatCm(to.heightMm)), chipStack(from, to, pct, args));
   stage.append(frame);
 }
 
 /** Full screen and the target is bigger: the stage is your screen; say how far the target reaches past each edge. */
-function drawEdges(stage, from, to, tw, th, fill, scale) {
+function drawEdges(stage, from, to, tw, th, fill, scale, pct, args) {
   stage.classList.add('is-edges');
   const o = overflowPerSide(to, from);
   const outline = el('div', 'outline target');
@@ -186,7 +202,7 @@ function drawEdges(stage, from, to, tw, th, fill, scale) {
   stage.append(
     outline,
     label('e-top', o.topMm), label('e-bottom', o.topMm), label('e-left', o.sideMm), label('e-right', o.sideMm),
-    el('p', 'chip', `${sizeLabel(to)} is ${Math.round((to.widthMm * to.heightMm) / (from.widthMm * from.heightMm) * 100)} % of your screen's area`),
+    chipStack(from, to, pct, args),
   );
 }
 
@@ -222,10 +238,11 @@ export function renderOverview(host, from, to) {
   svg.append(rect(bigger ? to : from, bigger ? 'ov-to' : 'ov-from'));
   svg.append(rect(bigger ? from : to, bigger ? 'ov-from' : 'ov-to'));
 
+  const title = el('h4', 'ov-title', 'Scaled comparison (not real size)');
   const caption = document.createElement('p');
   caption.className = 'legend';
-  caption.innerHTML = '<span class="key key-from"></span>Your screen <span class="key key-to"></span>Compared screen (both to scale)';
-  host.replaceChildren(svg, caption);
+  caption.innerHTML = '<span class="key key-from"></span>Your screen <span class="key key-to"></span>Compared screen (same scale for both)';
+  host.replaceChildren(title, svg, caption);
 }
 
 export function initRender() {

@@ -14,6 +14,8 @@ Early preview.
 - Sample content (a mock desktop at the screen's default scaling) is off by default and clipped inside the outline. Details and the bank-card fine-tune open in a drawer from the right.
 - The outline is always drawn whole. If it does not fit the free space, the page offers Full screen; for a bigger screen, Full screen shows your screen's edges and how far the other one reaches past each side.
 - Header and favicon use the Notchup emblem (`assets/mark.svg`) next to the app name.
-- Bank-card fine-tune for screens that are not the laptop's built-in display or are not at 100 % zoom.
+- An accuracy label under the area chip says whether the outline is real size (calibrated with a card, or based on your screen choice with a "Check with a card" link) or approximate (browser zoom is not 100 %, or the screen does not look like the one you picked). The small diagram in Details is titled "Scaled comparison (not real size)".
+- Start over clears the comparison from the link and returns to the start view. Drawing only hides the toolbar and footer, with a floating Exit button and Esc to come back. Fine-tune has a Reset fine-tune button.
+- Bank-card fine-tune ("Check the real size with a card") for screens that are not the laptop's built-in display or are not at 100 % zoom.
 - Shareable links: the comparison lives in the page's address (`from`, `to`, `cal`, `fill=1`).
 - No cookies, no storage and no requests to other sites, enforced by a test that scans the source.

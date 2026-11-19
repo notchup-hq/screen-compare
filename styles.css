@@ -142,6 +142,9 @@ select { width: 100%; }
 /* 3. Result: toolbar on top, the stage fills the rest of the window, the footer is below the fold */
 .result { height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); }
 .toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 6;
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -156,12 +159,13 @@ select { width: 100%; }
   border: 1px solid rgb(243 229 171 / 0.55);
   padding: 0.3rem 0.7rem;
   font-size: 0.9rem;
+  white-space: nowrap;
 }
 .toolbar button:hover { background: rgb(243 229 171 / 0.14); }
 .pair { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; font-size: 0.9rem; }
 .screen-btn::after { content: " ▾"; content: " ▾" / ""; }
 .icon-btn { min-width: 2.2rem; }
-.tools { display: flex; gap: 0.5rem; margin-left: auto; }
+.tools { display: flex; flex-wrap: wrap; gap: 0.4rem 0.5rem; margin-left: auto; }
 .dot { display: inline-block; width: 0.5rem; height: 0.5rem; margin-left: 0.4rem; border-radius: 50%; background: var(--stage-gold); }
 .switch { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer; }
 .switch input {
@@ -242,8 +246,14 @@ select { width: 100%; }
   background: var(--stage-gold);
   border-radius: 999px;
 }
-.frame .chip { position: absolute; z-index: 2; left: 50%; bottom: 14px; width: max-content; transform: translateX(-50%); }
-.stage > .chip { z-index: 2; }
+.chip-stack { z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; max-width: calc(100% - 1.5rem); }
+.frame .chip-stack { position: absolute; left: 50%; bottom: 14px; width: max-content; transform: translateX(-50%); }
+.accuracy { margin: 0; font-size: 0.8rem; text-align: center; color: var(--brand-cream); }
+.acc-zoom, .acc-mismatch { font-weight: 700; }
+.link-btn { padding: 0; border: 0; background: none; color: var(--brand-cream); text-decoration: underline; font-size: inherit; }
+.link-btn:hover { background: none; color: #fff; }
+.link-btn:focus-visible { outline-color: #64ffda; }
+.ov-title { margin: 0 0 0.4rem; font-size: 0.9rem; }
 
 /* A bigger target, in full screen: how far it reaches past each edge of your screen */
 .edge {
@@ -280,9 +290,9 @@ select { width: 100%; }
 .note { margin: 0.35rem 0 0; font-size: 0.875rem; color: var(--muted); }
 .note:empty { display: none; }
 
-.exit-fs { position: absolute; z-index: 5; top: 0.75rem; right: 0.75rem; }
-.is-fullscreen .toolbar, .is-fullscreen .site-footer { display: none; }
-.is-fullscreen .result { grid-template-rows: minmax(0, 1fr); }
+.exit-fs { position: absolute; z-index: 5; bottom: 0.75rem; right: 0.75rem; }
+.is-fullscreen .toolbar, .is-fullscreen .site-footer, .is-drawing .toolbar, .is-drawing .site-footer { display: none; }
+.is-fullscreen .result, .is-drawing .result { grid-template-rows: minmax(0, 1fr); }
 
 /* Footer: one quiet line */
 .site-footer {
@@ -399,9 +409,12 @@ select { width: 100%; }
 /* Calibration: the bank card at true card size */
 .card-stage { padding: 0.5rem 0; overflow-x: auto; }
 .card {
+  flex: none;
   border: 2px solid var(--gauge);
   background: var(--gauge-soft);
 }
+.cal-row { display: flex; align-items: flex-end; gap: 0.75rem; margin-bottom: 0.9rem; }
+.cal-row .cal-slider { flex: 1; min-width: 0; margin-bottom: 0; }
 .cal-slider { display: block; margin-bottom: 0.9rem; font-weight: 600; font-size: 0.9rem; }
 .cal-slider input { display: block; width: 100%; margin: 0.4rem 0 0; accent-color: var(--gauge); }
 .cal-note { font-size: 0.85rem; color: var(--muted); }
