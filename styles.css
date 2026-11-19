@@ -375,6 +375,8 @@ select { width: 100%; }
 /* Step 1: the number is the hero */
 .size-row { display: flex; align-items: center; gap: 0.5rem; }
 .dialog .size-row input { width: calc(5ch + 1.2rem + 2px); min-width: 0; padding: 0.3rem 0.6rem; font-size: 2.25rem; font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; }
+/* A quiet gold edge instead of the page-wide focus ring: the field is the hero of the step, so the ring was loud. Still a clear indicator (gold on navy / dark on light). */
+.dialog .size-row input:focus-visible { outline: none; border-color: var(--gauge); box-shadow: 0 0 0 1px var(--gauge); }
 .step-btn { flex: none; width: 2.75rem; min-width: 2.75rem; height: 2.75rem; padding: 0; font-size: 1.6rem; font-weight: 700; line-height: 1; }
 .unit { color: var(--muted); font-size: 1.1rem; }
 .hero { display: flex; align-items: center; gap: 0.6rem; margin: 0 0 0.5rem; font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
