@@ -2,7 +2,7 @@
 // until the on-screen card matches. The result is stored in the URL (cal=px per mm).
 
 import { BANK_CARD_MM } from './screens.js';
-import { yourScreen } from './scale.js';
+import { round1, yourScreen } from './scale.js';
 
 const CARD_RADIUS_MM = 3.18; // ISO/IEC 7810 ID-1 corner radius
 
@@ -30,8 +30,13 @@ export function initCalibrate(onChange) {
   const reset = body.querySelector('#cal-reset');
   reset.addEventListener('click', () => { onChange(null); range.focus(); });
 
+  let drawnKey = '';
   document.addEventListener('compare', (e) => {
     const { scale, cal } = e.detail;
+    // Sent on every update, resizes included: redraw the card only when its scale changed.
+    const key = `${scale}|${cal}|${window.screen.width}|${window.devicePixelRatio}`;
+    if (key === drawnKey) return;
+    drawnKey = key;
     reset.disabled = !cal;
     card.style.width = `${BANK_CARD_MM.width * scale}px`;
     card.style.height = `${BANK_CARD_MM.height * scale}px`;
@@ -39,7 +44,7 @@ export function initCalibrate(onChange) {
     range.value = scale;
     // The screen size this card scale implies (the same maths as a card measurement everywhere else).
     const you = yourScreen({ cal: scale, css: { width: window.screen.width, height: window.screen.height }, dpr: window.devicePixelRatio || 1 });
-    const inches = you ? Math.round(you.diagonalIn * 10) / 10 : null;
+    const inches = you ? round1(you.diagonalIn) : null;
     size.textContent = inches ? `Your screen is about ${inches}"` : '';
     range.setAttribute('aria-valuetext', `Card drawn ${Math.round(BANK_CARD_MM.width * scale)} pixels wide${inches ? `, your screen about ${inches} inches` : ''}`);
   });

@@ -4,7 +4,7 @@
 
 import { SIZE_MAX_IN, SIZE_MIN_IN } from './scale.js';
 
-export const SIZE_STEP_IN = 0.5;
+const SIZE_STEP_IN = 0.5;
 const EPS = 1e-9;
 
 /** A number from what was typed: "15,6" and "15.6" both work. Null when it is not a number. Range is not checked. */
