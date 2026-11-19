@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Screen compare: see a laptop screen at true size</title>
+  <meta name="description" content="See how a smaller laptop screen would look, at true size, on the screen you have now.">
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="js/main.js"></script>
+</head>
+<body>
+  <div id="stage" class="stage" aria-hidden="true"></div>
+  <button type="button" id="drawing-toggle" class="drawing-toggle" aria-pressed="false">Show drawing only</button>
+
+  <div class="page" id="page">
+    <header class="masthead">
+      <h1>Screen compare</h1>
+      <p>See how a smaller laptop screen would look, at true size, on the screen you have now.</p>
+    </header>
+
+    <main>
+      <section class="panel" aria-labelledby="pick-h">
+        <h2 id="pick-h" class="visually-hidden">Choose screens</h2>
+        <div class="picker" data-role="from" data-label="Your screen"></div>
+        <div class="picker" data-role="to" data-label="Compare with"></div>
+        <noscript><p>This page needs JavaScript to measure and draw screens.</p></noscript>
+      </section>
+
+      <section class="panel" aria-labelledby="result-h">
+        <h2 id="result-h">Result</h2>
+        <div id="result" aria-live="polite"></div>
+        <div id="overview" class="overview"></div>
+        <label class="check">
+          <input type="checkbox" id="fill">
+          <span>Fill the outline with sample content at the screen's default scaling</span>
+        </label>
+      </section>
+
+      <section class="panel" aria-labelledby="cal-h">
+        <details id="calibrate">
+          <summary id="cal-h">Fine-tune with a bank card</summary>
+          <div id="cal-body"></div>
+        </details>
+      </section>
+
+      <section class="notes" aria-labelledby="notes-h">
+        <h2 id="notes-h">How accurate is this?</h2>
+        <p>Browsers cannot read the physical size of a screen, so the size is worked out from the screen you pick. This assumes the browser is on the laptop's built-in screen, in a window at 100 % zoom. On an external monitor or at another zoom level the sizes will be off. Use the bank card to correct it.</p>
+        <p>Nothing is stored and nothing leaves your browser. Your choices live in this page's link, so you can share it.</p>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <a href="https://notchup.fi">Made by Notchup</a>
+      <a href="https://github.com/notchup-hq/screen-compare">Source on GitHub</a>
+      <span>MIT licence</span>
+    </footer>
+  </div>
+</body>
+</html>
