@@ -3,6 +3,7 @@ import { createMemory, defaultName, matchProfile, signatureOf } from './memory.j
 import { createSetup } from './setup.js';
 import { initDetails } from './details.js';
 import { initMenu } from './menu.js';
+import { typicalSize } from './size-field.js';
 import { draw, initRender, renderOverview } from './render.js';
 import { matchScreens, nativeResolution } from './detect.js';
 import { smallerThan, smallerThanSize } from './suggest.js';
@@ -295,7 +296,13 @@ const setup = createSetup(ui.setup, {
 
 /** Draw the card in the fine-tune drawer at the scale of `f` (a draft from the setup dialog). */
 function emitCardScale(f) {
-  emitCompare(f.cal ?? yourFor(f)?.pxPerMm ?? DEFAULT_PX_PER_MM, f.cal ?? null);
+  emitCompare(f.cal ?? yourFor(f)?.pxPerMm ?? yourFor({ size: typicalNow() })?.pxPerMm ?? DEFAULT_PX_PER_MM, f.cal ?? null);
+}
+
+/** The size the setup suggests for this screen (a phone 6.1"), so a card starts near its real size. */
+function typicalNow() {
+  const { width, height } = screenNow();
+  return typicalSize({ short: Math.min(width, height), coarse: window.matchMedia?.('(pointer: coarse)').matches === true });
 }
 
 function openSetup(focus) {
@@ -379,7 +386,7 @@ initCalibrate((v) => {
     tuneTouched = true;
     update();
   }
-});
+}, () => drawer.close());
 // Made by initCalibrate above.
 const calRemember = $('#cal-remember');
 const calRememberRow = $('#cal-remember-row');

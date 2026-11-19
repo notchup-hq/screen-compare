@@ -10,6 +10,7 @@ All notable changes to this project are listed here, newest first. The format fo
 - Phone and tablet sizes to compare with: a phone is offered 5.4/6.1/6.5/6.9" phones, a tablet 8.3/11/12.4/13" tablets, and "Show all sizes" lists every kind. Phones and tablets are drawn the way you hold your own screen.
 - Phone models: iPhone 16e, 17, Air and 17 Pro Max, Galaxy S25, S25+ and S25 Ultra, Pixel 10, 10 Pro and 10 Pro XL. On a phone "Pick your phone model" is offered for your own screen, and the model list in step 2 shows only phones until "Show all sizes" is ticked.
 - Fine-tune can also use a ruler, in cm or inches: 10 cm or 4 inches where it fits, 5 cm or 2 inches on a phone.
+- Fine-tune is a fitting screen: the card, − / + and a slider, and a "Set" button, so on a phone the card and the adjuster fit without scrolling and it is clear when you are done. The rest is under "More options". With nothing known the card starts near a phone's real size.
 - Search and link previews: a sharper description, a canonical address, Open Graph and X card tags with a 1200 × 630 share image, structured data (a free web app by Notchup), `robots.txt` and `sitemap.xml`. Nothing is loaded from other sites; the privacy test allows the page's own address in this metadata only.
 
 ### Fixed
