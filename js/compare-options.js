@@ -8,7 +8,7 @@ import { round1, validSize } from './scale.js';
 import { parseSize } from './size-field.js';
 
 /** Order of the headings in the screen lists. */
-export const GROUPS = ['Apple', 'Framework', 'Microsoft', 'Generic laptops', 'Monitors'];
+export const GROUPS = ['Apple', 'Framework', 'Microsoft', 'Generic laptops', 'Monitors', 'Tablets', 'Phones'];
 
 /** Aspect ratios Details offers for a generic laptop size you compare with. */
 export const RATIO_CHOICES = RATIOS.filter((r) => ['16x10', '16x9', '3x2'].includes(r.id));
@@ -16,16 +16,50 @@ export const RATIO_CHOICES = RATIOS.filter((r) => ['16x10', '16x9', '3x2'].inclu
 /** Aspect ratios Details offers for a typed size of your own screen, only when the resolution is unusable. */
 export const SIZE_RATIO_CHOICES = ['16x9', '16x10', '3x2', '21x9'].map((id) => RATIOS.find((r) => r.id === id));
 
-/** A screen this size or bigger counts as a monitor; smaller ones as a laptop. */
+/** Under this size a screen counts as a phone; a monitor from MONITOR_FROM_IN up. */
+const PHONE_UNDER_IN = 7.5;
 const MONITOR_FROM_IN = 19;
+/** A touch screen under this size is a tablet, not a laptop (no laptop is used by touch alone). */
+const TABLET_UNDER_IN = 14;
 
-/** 'laptop' or 'monitor', from the diagonal in inches (unknown counts as a laptop). */
-export function kindForDiagonal(inches) {
+/**
+ * The kind of your own screen, from its diagonal in inches and whether its main pointer is touch:
+ * 'phone', 'tablet', 'laptop' or 'monitor'. An unknown size counts as a laptop.
+ */
+export function kindOfYours(inches, { touch = false } = {}) {
+  if (!(inches > 0)) return 'laptop';
+  if (inches < PHONE_UNDER_IN) return 'phone';
+  if (touch && inches < TABLET_UNDER_IN) return 'tablet';
   return inches >= MONITOR_FROM_IN ? 'monitor' : 'laptop';
+}
+
+/** The kinds in the order "Show all sizes" lists them, after the visitor's own kind. */
+export const KINDS = [
+  { kind: 'phone', label: 'Phones' },
+  { kind: 'tablet', label: 'Tablets' },
+  { kind: 'laptop', label: 'Laptops' },
+  { kind: 'monitor', label: 'Monitors' },
+];
+
+/** The kinds for the second question: your own first, then the rest only when all are shown. */
+export function kindsToShow(kind, all) {
+  return all ? [kind, ...KINDS.map((k) => k.kind).filter((k) => k !== kind)] : [kind];
 }
 
 /** The four buttons of the second question, by the kind of your own screen. Each is a generic preset. */
 export const STEP2_SIZES = {
+  phone: [
+    { preset: 'p54', label: '5.4"', name: '5.4 inch phone' },
+    { preset: 'p61', label: '6.1"', name: '6.1 inch phone' },
+    { preset: 'p65', label: '6.5"', name: '6.5 inch phone' },
+    { preset: 'p69', label: '6.9"', name: '6.9 inch phone' },
+  ],
+  tablet: [
+    { preset: 't83', label: '8.3"', name: '8.3 inch tablet' },
+    { preset: 't11', label: '11"', name: '11 inch tablet' },
+    { preset: 't124', label: '12.4"', name: '12.4 inch tablet' },
+    { preset: 't13', label: '13"', name: '13 inch tablet' },
+  ],
   laptop: [
     { preset: 'g133', label: '13"', name: '13 inch laptop' },
     { preset: 'g14', label: '14"', name: '14 inch laptop' },
@@ -40,13 +74,37 @@ export const STEP2_SIZES = {
   ],
 };
 
+/** The kind whose step-2 buttons include `spec`, or null. */
+export function step2KindOf(spec) {
+  return Object.keys(STEP2_SIZES).find((k) => STEP2_SIZES[k].some((p) => p.preset === spec)) ?? null;
+}
+
+/** The ratio a typed "Other size" gets, by the kind of your screen. 20:9 and 4:3 are only used for handhelds. */
+const OTHER_RATIO = { phone: '20x9', tablet: '4x3', laptop: '16x10', monitor: '16x9' };
+const HANDHELD_RATIOS = ['20x9', '4x3'];
+
+/** Phones and tablets are held either way up; laptops and monitors never stand on their side. */
+export function handheld(screen) {
+  return screen.custom ? HANDHELD_RATIOS.includes(screen.ratioId) : screen.kind === 'phone' || screen.kind === 'tablet';
+}
+
+/**
+ * A resolved screen turned the way you hold your own (`upright`: taller than wide), when it is a
+ * phone or tablet. Laptops and monitors are returned as they are.
+ */
+export function facing(screen, upright) {
+  if (!screen || !handheld(screen) || (screen.heightMm > screen.widthMm) === upright) return screen;
+  const looks = screen.looksLike && [screen.looksLike[1], screen.looksLike[0]];
+  return { ...screen, widthMm: screen.heightMm, heightMm: screen.widthMm, ratio: 1 / screen.ratio, looksLike: looks };
+}
+
 /**
  * The screen spec for a size typed under "Other size": a generic preset when one has that size and the
- * usual ratio of the kind (16:10 laptops, 16:9 monitors), else a custom size. Null for an invalid size.
+ * usual ratio of the kind (OTHER_RATIO), else a custom size. Null for an invalid size.
  */
 export function otherSizeSpec(inches, kind) {
   if (!validSize(inches)) return null;
-  const ratioId = kind === 'monitor' ? '16x9' : '16x10';
+  const ratioId = OTHER_RATIO[kind] ?? OTHER_RATIO.laptop;
   const ratio = RATIOS.find((r) => r.id === ratioId).value;
   const d = round1(inches);
   const preset = SCREENS.find((s) => !s.source && s.kind === kind && s.diagonalIn === d && Math.abs(s.resX / s.resY - ratio) < 0.01);

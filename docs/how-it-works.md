@@ -94,7 +94,7 @@ Presets live in one file: `js/screens.js`. Add an entry to `SCREENS`:
   id: 'mbp14',                 // short slug, used in the URL
   name: 'MacBook Pro 14" (M1 Pro – M4)',
   group: 'Apple',              // heading in the lists: Apple, Framework, Microsoft, Generic laptops or Monitors
-  kind: 'laptop',              // 'laptop' or 'monitor'; only laptop models with a source are detected
+  kind: 'laptop',              // 'laptop', 'monitor', 'tablet' or 'phone'; only laptop models with a source are detected
   short: 'MacBook Pro 14"',          // used in the toolbar and the chip; keep the size in inches in it
   diagonalIn: 14.2,            // panel diagonal as the maker states it
   resX: 3024, resY: 1964,      // native panel pixels

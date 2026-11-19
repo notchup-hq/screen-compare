@@ -9,7 +9,7 @@ import { smallerThan, smallerThanSize } from './suggest.js';
 import { parseState, resolveScreen, serializeState, startOverUrl } from './state.js';
 import { accuracy, accuracyText } from './accuracy.js';
 import { RATIOS } from './screens.js';
-import { SIZE_RATIO_CHOICES } from './compare-options.js';
+import { SIZE_RATIO_CHOICES, facing } from './compare-options.js';
 import { DEFAULT_PX_PER_MM, round1, usableResolution, yourScreen } from './scale.js';
 import { VERSION } from './version.js';
 import { areaRatio, formatCm } from './geometry.js';
@@ -190,7 +190,8 @@ async function goFullscreen() {
 
 function update() {
   const from = yourFor(state);
-  const to = resolveScreen(state.to);
+  // A phone or tablet you compare with is turned the way you hold your own screen.
+  const to = facing(resolveScreen(state.to), from ? from.heightMm > from.widthMm : false);
   if (!from || !to || view !== 'result') return;
   const scale = from.pxPerMm;
   writeUrl();

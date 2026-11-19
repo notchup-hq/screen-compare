@@ -461,6 +461,10 @@ input[aria-invalid=true] { border-color: var(--error); box-shadow: 0 0 0 1px var
 
 /* Step 2: four big buttons, each outline drawn to the same scale */
 .size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.sizes { display: grid; gap: 0.5rem; }
+.size-cap { margin: 0.25rem 0 0; font-size: 0.9rem; color: var(--muted); }
+/* All sizes: one row per kind where there is room, so the list stays short. */
+@media (min-width: 480px) { .sizes [role=group] .size-grid { grid-template-columns: repeat(4, 1fr); } }
 .size-btn { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.35rem; min-height: 5rem; padding: 0.6rem 0.5rem; font-size: 1.15rem; font-weight: 700; }
 .size-btn svg { display: block; width: 100%; max-width: 4.5rem; height: auto; }
 .size-btn rect { fill: var(--gauge-soft); stroke: var(--gauge); stroke-width: 2; }
@@ -568,7 +572,7 @@ legend, .other label { display: block; padding: 0; margin-bottom: 0.35rem; font-
 /* Never scrolled sideways: a card wider than the window is drawn upright, and on a screen narrower
    than a card it is cut at the right edge, so its top and bottom edges still line up. */
 .card-stage { padding: 0.5rem 0; overflow: hidden; }
-/* The fine-tune drawer grows to fit the card at true size, up to the full window. */
+/* The fine-tune drawer grows to fit the bank card at true card size, up to the full window. */
 .drawer.drawer-tune { width: min(100vw, max(30rem, calc(var(--card-w, 0px) + 2.5rem + 1px))); }
 .cal-turn { font-weight: 600; }
 .card {

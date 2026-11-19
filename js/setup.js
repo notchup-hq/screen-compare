@@ -7,7 +7,8 @@
 
 import { resolveScreen } from './state.js';
 import {
-  groupedScreens, laptopModels, kindForDiagonal, otherChoice, STEP2_SIZES, SIZE_RATIO_CHOICES,
+  groupedScreens, laptopModels, kindOfYours, kindsToShow, otherChoice, step2KindOf, facing, KINDS, STEP2_SIZES,
+  SIZE_RATIO_CHOICES,
 } from './compare-options.js';
 import { SIZE_MAX_IN, SIZE_MIN_IN, round1, usableResolution, validSize } from './scale.js';
 import { parseSize, sizeStepper, typicalSize } from './size-field.js';
@@ -99,10 +100,9 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
   const toOther = $(dialog, '#to-other');
   const otherSize = $(dialog, '#other-size');
   // A phone or tablet is asked about its own size first, so the hint and the − and + start near it.
-  const typical = typicalSize({
-    short: Math.min(window.screen.width, window.screen.height),
-    coarse: window.matchMedia?.('(pointer: coarse)').matches === true,
-  });
+  const touch = window.matchMedia?.('(pointer: coarse)').matches === true;
+  const typical = typicalSize({ short: Math.min(window.screen.width, window.screen.height), coarse: touch });
+  const allBox = $(dialog, '#all-sizes');
   sizeInput.placeholder = String(typical);
   const syncSizeAria = sizeStepper(sizeInput, $(dialog, '#size-minus'), $(dialog, '#size-plus'), { start: typical });
   const syncOtherAria = sizeStepper(otherSize, $(dialog, '#other-minus'), $(dialog, '#other-plus'), { start: 22 });
@@ -142,13 +142,6 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
     return validSize(v) ? v : null;
   };
 
-  // Next waits for a number; the placeholder is only a hint, never a value. Called whenever the field
-  // can have changed, including from code (renderYou runs after every such change).
-  function syncSize() {
-    sizeNext.disabled = parseSize(sizeInput.value) == null;
-    syncSizeAria();
-  }
-
   function readYour() {
     if (cal) return { cal };
     if (preset) return { from: preset };
@@ -168,7 +161,7 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
 
   // ---- Step 1: how big is your screen?
   function renderYou() {
-    syncSize();
+    syncSizeAria();
     const you = readYour();
     const isRemembered = Boolean(remembered && you);
     const known = isRemembered || Boolean(cal || (preset && modelIds.has(preset)));
@@ -243,14 +236,16 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
   sizeInput.addEventListener('input', () => {
     forget();
     showError('');
-    syncSize();
+    syncSizeAria();
   });
   sizeInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); if (!sizeNext.disabled) sizeNext.click(); }
+    if (e.key === 'Enter') { e.preventDefault(); sizeNext.click(); }
   });
+  // The placeholder is only a hint, never a value. Next stays enabled (a greyed-out button next to a
+  // grey example reads as "that size is not allowed") and says what is missing instead.
   sizeNext.addEventListener('click', () => {
     if (!readYour()) {
-      showError(RANGE_TEXT);
+      showError(sizeInput.value.trim() === '' ? `Type your screen's size, for example ${typical}.` : RANGE_TEXT);
       sizeInput.focus();
       return;
     }
@@ -327,13 +322,35 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
   cardBtn.addEventListener('click', () => onMeasure({ your: readYour(), cal }));
 
   // ---- Step 2: which size are you thinking of?
-  function renderSizes() {
-    const items = STEP2_SIZES[kind].map((p) => ({ p, s: resolveScreen(p.preset) }));
-    // One scale for all four outlines, so a bigger screen looks bigger.
-    const scale = 92 / Math.max(...items.map(({ s }) => s.widthMm));
+  // One grid per kind; the outlines in a grid share one scale, so a bigger screen looks bigger. Phones
+  // and tablets stand upright when you hold your own screen upright.
+  function sizeGrid(k) {
+    const upright = window.screen.height > window.screen.width;
+    const items = STEP2_SIZES[k].map((p) => ({ p, s: facing(resolveScreen(p.preset), upright) }));
+    const scale = Math.min(92 / Math.max(...items.map(({ s }) => s.widthMm)), 64 / Math.max(...items.map(({ s }) => s.heightMm)));
     const boxHeight = Math.ceil(Math.max(...items.map(({ s }) => s.heightMm)) * scale + 8);
-    sizes.replaceChildren(...items.map(({ p, s }) => sizeButton(p, s, scale, boxHeight)));
-    for (const b of sizes.children) {
+    const grid = document.createElement('div');
+    grid.className = 'size-grid';
+    grid.append(...items.map(({ p, s }) => sizeButton(p, s, scale, boxHeight)));
+    return grid;
+  }
+
+  function renderSizes() {
+    const kinds = kindsToShow(kind, allBox.checked);
+    sizes.replaceChildren(...kinds.map((k) => {
+      if (kinds.length === 1) return sizeGrid(k);
+      // With all sizes shown, each kind gets a caption; on its own it needs none.
+      const group = document.createElement('div');
+      group.setAttribute('role', 'group');
+      group.setAttribute('aria-labelledby', `sizes-${k}`);
+      const cap = document.createElement('p');
+      cap.className = 'size-cap';
+      cap.id = `sizes-${k}`;
+      cap.textContent = KINDS.find((x) => x.kind === k).label;
+      group.append(cap, sizeGrid(k));
+      return group;
+    }));
+    for (const b of sizes.querySelectorAll('button[data-spec]')) {
       if (b.dataset.spec === currentTo) b.setAttribute('aria-current', 'true');
     }
   }
@@ -369,14 +386,17 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
   }
 
   function renderTo() {
-    kind = kindForDiagonal(diagonalOf(readYour()));
+    kind = kindOfYours(diagonalOf(readYour()), { touch });
+    // A size from another kind's buttons (say a laptop from a phone) opens with all sizes shown.
+    const toKind = step2KindOf(currentTo);
+    allBox.checked = Boolean(toKind && toKind !== kind);
     renderSizes();
     otherSize.value = '';
     toSelect.value = '';
     keepCustom = null;
     // Something chosen before that is not one of the four buttons: show it under "Other size".
     const target = currentTo && resolveScreen(currentTo);
-    const onButton = STEP2_SIZES[kind].some((p) => p.preset === currentTo);
+    const onButton = Boolean(toKind);
     setOther(Boolean(target && !onButton));
     if (target && !onButton) {
       if (target.custom) {
@@ -397,6 +417,7 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
     onApply({ ...your, to, remember: canRemember ? rememberBox.checked : null });
   }
 
+  allBox.addEventListener('change', renderSizes);
   sizes.addEventListener('click', (e) => {
     const b = e.target.closest('button[data-spec]');
     if (b) apply(b.dataset.spec);
