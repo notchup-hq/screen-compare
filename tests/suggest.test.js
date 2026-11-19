@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SCREENS } from '../js/screens.js';
 import { resolveScreen } from '../js/state.js';
-import { smallerThan, smallerThanSize, sizeLabel } from '../js/intro.js';
+import { smallerThan, smallerThanSize, sizeLabel } from '../js/suggest.js';
 
 const area = (id) => {
   const s = resolveScreen(id);

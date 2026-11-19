@@ -34,7 +34,8 @@ export function cssPxPerCm({ diagonalIn, resX, resY, dpr }) {
   return Math.hypot(resX, resY) / diagonalIn / dpr / 2.54;
 }
 
-const round1 = (n) => Math.round(n * 10) / 10;
+/** A number rounded to one decimal: the way sizes in inches are shown. */
+export const round1 = (n) => Math.round(n * 10) / 10;
 
 /**
  * @param {{ preset?: object|null, sizeIn?: number|null, res?: number[]|null, ratio?: number|null,

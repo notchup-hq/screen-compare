@@ -2,31 +2,13 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SCREENS } from '../js/screens.js';
 import { resolveScreen } from '../js/state.js';
-import { GROUPS, SIZE_PILLS, MONITOR_PILLS, STEP2_SIZES, MODEL_PILL, groupedScreens, laptopModels, defaultRatio, kindForDiagonal, otherSizeSpec, otherChoice, pillFor, specFor } from '../js/compare-options.js';
+import { GROUPS, LAPTOP_SIZES, STEP2_SIZES, groupedScreens, laptopModels, kindForDiagonal, otherSizeSpec, otherChoice, laptopSizeFor, laptopSpec } from '../js/compare-options.js';
 
 test('every preset belongs to a known group, and the lists keep them all', () => {
   for (const s of SCREENS) assert.ok(GROUPS.includes(s.group), `${s.id}: ${s.group}`);
   const grouped = groupedScreens();
   assert.equal(grouped.flatMap((g) => g.screens).length, SCREENS.length);
   assert.equal(grouped.at(-1).group, 'Monitors');
-});
-
-test('size pills point at real generic presets', () => {
-  for (const p of SIZE_PILLS) {
-    const s = resolveScreen(p.preset);
-    assert.ok(s && s.group === 'Generic laptops' && s.kind === 'laptop', p.id);
-    assert.ok(p.label.startsWith(p.id), p.id);
-  }
-});
-
-test('monitor pills point at generic monitors and map both ways', () => {
-  for (const p of MONITOR_PILLS) {
-    const s = resolveScreen(p.preset);
-    assert.ok(s && s.group === 'Monitors' && s.kind === 'monitor' && !s.source, p.id);
-    assert.equal(specFor(p.id, null), p.preset);
-    assert.deepEqual(pillFor(p.preset), { pill: p.id, ratioId: null });
-  }
-  assert.equal(MONITOR_PILLS.length, SCREENS.filter((s) => s.kind === 'monitor').length);
 });
 
 test('the model list for your own screen is laptop models with a source', () => {
@@ -74,32 +56,28 @@ test('another size typed in the second question becomes a preset or a custom siz
   for (const spec of [otherSizeSpec(22, 'laptop'), otherSizeSpec(34, 'monitor')]) assert.ok(resolveScreen(spec), spec);
 });
 
-test('a pill starts with its preset, and another ratio gives a custom size', () => {
-  assert.equal(specFor('14', defaultRatio('14')), 'g14');
-  assert.equal(specFor('15', defaultRatio('15')), 'g156');
-  assert.equal(defaultRatio('15'), '16x9');
-  assert.equal(specFor('14', '16x9'), 'c-14.0-16x9');
-  assert.equal(specFor('13', '3x2'), 'c-13.3-3x2');
-  assert.equal(specFor(MODEL_PILL, null, 'mbp14'), 'mbp14');
-  assert.equal(specFor(MODEL_PILL, null, ''), null);
-  assert.equal(specFor('99', null), null);
+test('a laptop size starts with its preset, and another ratio gives a custom size', () => {
+  assert.equal(laptopSpec('g14', '16x10'), 'g14');
+  assert.equal(laptopSpec('g156', '16x9'), 'g156');
+  assert.equal(laptopSpec('g14', '16x9'), 'c-14.0-16x9');
+  assert.equal(laptopSpec('g133', '3x2'), 'c-13.3-3x2');
+  assert.equal(laptopSpec('g14', null), 'g14');
+  assert.equal(laptopSpec('mbp14', '3x2'), null);
+  assert.equal(laptopSpec('nope', null), null);
 });
 
-test('pill and spec round trip', () => {
-  for (const p of SIZE_PILLS) {
+test('laptop size and spec round trip', () => {
+  for (const { preset } of LAPTOP_SIZES) {
     for (const ratioId of ['16x10', '16x9', '3x2']) {
-      const spec = specFor(p.id, ratioId);
+      const spec = laptopSpec(preset, ratioId);
       assert.ok(resolveScreen(spec), spec);
-      assert.deepEqual(pillFor(spec), { pill: p.id, ratioId }, spec);
+      assert.deepEqual(laptopSizeFor(spec), { preset, ratioId }, spec);
     }
   }
 });
 
-test('anything else belongs to the model list', () => {
-  assert.deepEqual(pillFor('mbp14'), { pill: MODEL_PILL, ratioId: null });
-  assert.deepEqual(pillFor('c-22.0-16x9'), { pill: MODEL_PILL, ratioId: null });
-  assert.deepEqual(pillFor('nope'), { pill: null, ratioId: null });
-  assert.deepEqual(pillFor(null), { pill: null, ratioId: null });
+test('models, monitors, other sizes and bad specs have no ratio to change', () => {
+  for (const spec of ['mbp14', 'm27', 'c-22.0-16x9', 'c-14.0-21x9', 'nope', null]) assert.equal(laptopSizeFor(spec), null, String(spec));
 });
 
 test('other size and model: the one changed last is used', () => {

@@ -5,7 +5,7 @@
 // shows a card that offers Full screen instead.
 
 import { fitsBox, fitsInside, formatCm, overflowPerSide } from './geometry.js';
-import { sizeLabel } from './intro.js';
+import { sizeLabel } from './suggest.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -79,7 +79,8 @@ function reachSentence(to, from) {
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let last; // the latest draw() arguments, so a resize can redraw
-let lastKey;
+let lastScreens; // "from>to" of the previous drawing, to fade in only when the compared screens change
+let lastDrawn = ''; // everything the last drawing depended on: an identical redraw is skipped
 let lastLive = '';
 
 function chipText(from, to, pct) {
@@ -137,12 +138,21 @@ export function draw(args) {
   const sh = stage.clientHeight;
   if (!sw || !sh) return; // not visible yet
   const full = Boolean(document.fullscreenElement);
+  // The ResizeObserver, a window resize and every state change all end up here, often with nothing new
+  // to show: do the work (a full rebuild of the stage) only when something it draws has changed.
+  const drawn = JSON.stringify([
+    from.id, from.widthMm, from.heightMm, to.id, to.widthMm, to.heightMm, scale, fill, pct,
+    args.accuracy, args.accuracyLabel, args.canFullscreen, sw, sh, full,
+  ]);
+  if (drawn === lastDrawn && stage.firstElementChild) return;
+  lastDrawn = drawn;
+
   const fits = fitsInside(to, from);
   const tw = to.widthMm * scale;
   const th = to.heightMm * scale;
-  const key = `${from.id}>${to.id}`;
-  const changed = lastKey !== undefined && key !== lastKey;
-  lastKey = key;
+  const screens = `${from.id}>${to.id}`;
+  const changed = lastScreens !== undefined && screens !== lastScreens;
+  lastScreens = screens;
 
   const live = chipText(from, to, pct) + (fits ? '' : `, and it ${reachSentence(to, from)}`);
   const liveEl = document.getElementById('live');

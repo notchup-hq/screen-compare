@@ -8,11 +8,12 @@
 // A card scale (cal, CSS px per mm) is only right at the same devicePixelRatio, which is why the
 // signature includes it.
 
+import { round1 } from './scale.js';
 import { parseState, serializeState } from './state.js';
 
 export const STORAGE_KEY = 'screen-compare:v1';
 export const MAX_PROFILES = 5;
-export const NAME_MAX = 40;
+const NAME_MAX = 40;
 const DPR_TOLERANCE = 0.01;
 
 /** The signature of a screen: its size in CSS pixels and its pixel ratio. */
@@ -55,7 +56,7 @@ export function cleanName(name) {
 /** The default name of a screen (from `yourScreen`): the model's short name, or its size. */
 export function defaultName(screen) {
   if (screen.basis === 'model') return screen.short ?? screen.name;
-  return `${Math.round(screen.diagonalIn * 10) / 10}" screen`;
+  return `${round1(screen.diagonalIn)}" screen`;
 }
 
 /**

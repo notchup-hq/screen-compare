@@ -10,7 +10,7 @@ import { SCREENS } from './screens.js';
 const TOLERANCE_PX = 2;
 
 /** The presets a screen can be recognised as: real laptop models. */
-export const DETECTABLE = SCREENS.filter((s) => s.kind === 'laptop' && s.source);
+const DETECTABLE = SCREENS.filter((s) => s.kind === 'laptop' && s.source);
 
 /** Native resolution as [long side, short side], so portrait and landscape agree. */
 export function nativeResolution(cssWidth, cssHeight, pixelRatio = 1) {

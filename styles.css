@@ -40,8 +40,14 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
+/* The page is a grid: the view (start, or result with its toolbar) over one slim footer line. On a
+   window at least 560 px tall the body is exactly the window high, so nothing scrolls and the footer
+   stays in view; on shorter windows (phones in landscape) the page scrolls normally. */
 body {
   margin: 0;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
   background: var(--paper);
   color: var(--ink);
   font: 1rem/1.5 var(--font);
@@ -61,14 +67,6 @@ a { color: var(--gauge); }
 
 *[hidden] { display: none !important; }
 
-/* The page is a grid: the view (start, or result with its toolbar) over one slim footer line. On a
-   window at least 560 px tall the body is exactly the window high, so nothing scrolls and the footer
-   stays in view; on shorter windows (phones in landscape) the page scrolls normally. */
-body {
-  min-height: 100dvh;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
-}
 @media (min-width: 768px) and (min-height: 560px) {
   body { height: 100dvh; }
   .start { overflow-y: auto; } /* only if the content cannot fit even squeezed: never push the footer out */
@@ -108,15 +106,11 @@ select { width: 100%; }
 /* Brand strip: the gold logo is drawn for navy, so it always sits on navy. */
 .brand { display: inline-flex; align-items: center; gap: 0.6rem; }
 .logo { display: block; line-height: 0; border-radius: 4px; }
-.logo img { display: block; width: 28px; height: 28px; }
 /* The company site's soft golden glow (static, no script): on hover where a pointer really hovers, and on keyboard focus. */
-.logo img { filter: drop-shadow(0 0 0 rgba(212, 175, 55, 0)); }
+.logo img { display: block; width: 28px; height: 28px; filter: drop-shadow(0 0 0 rgba(212, 175, 55, 0)); }
 .logo:focus-visible img { filter: drop-shadow(0 0 18px rgba(212, 175, 55, 0.25)); }
 @media (hover: hover) {
   .logo:hover img { filter: drop-shadow(0 0 18px rgba(212, 175, 55, 0.25)); }
-}
-@media (prefers-reduced-motion: no-preference) {
-  .logo img { transition: filter 0.6s ease; }
 }
 .app-name { font-weight: 650; color: var(--brand-cream); }
 .logo:focus-visible, .toolbar button:focus-visible, .toolbar input:focus-visible { outline-color: #64ffda; }
@@ -187,6 +181,7 @@ select { width: 100%; }
 }
 .toolbar button:hover { background: rgb(243 229 171 / 0.14); }
 .pair { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; font-size: 0.9rem; }
+/* The arrow is decoration: the second declaration gives it an empty text alternative where supported; the first is the fallback for browsers that do not know that syntax. */
 .screen-btn::after { content: " ▾"; content: " ▾" / ""; }
 .tools { display: flex; flex-wrap: wrap; gap: 0.4rem 0.5rem; margin-left: auto; }
 .dot { display: inline-block; width: 0.5rem; height: 0.5rem; margin-left: 0.4rem; border-radius: 50%; background: var(--stage-gold); }
@@ -349,9 +344,9 @@ select { width: 100%; }
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 12px;
+  overscroll-behavior: contain; /* a long hint scrolls inside the dialog, never the page behind it */
 }
 .dialog::backdrop, .drawer::backdrop { background: rgb(5 12 20 / 0.6); }
-.dialog { overscroll-behavior: contain; } /* a long hint scrolls inside the dialog, never the page behind it */
 .dialog-body { padding: 0.5rem 1.5rem 1.5rem; }
 .dialog-top { display: flex; align-items: center; margin: 0 -0.75rem 0.25rem; }
 .dialog-top button { min-height: 2.75rem; padding: 0 0.75rem; border: 0; background: none; }
@@ -433,27 +428,24 @@ input[aria-invalid=true] { border-color: var(--error); box-shadow: 0 0 0 1px var
 /* The two alternatives: the one not used is dimmed, not disabled, so it stays reachable. */
 .to-other .unused { opacity: 0.6; }
 .to-other #to-show { display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@media (prefers-reduced-motion: no-preference) {
-  .to-other .size-row, .to-other select { transition: opacity 0.15s; }
-}
 
-/* Details: chips and the resolution line */
+/* Details drawer: the resolution, the aspect-ratio choices and the card note */
 .other { margin-top: 0.6rem; }
 legend, .other label { display: block; padding: 0; margin-bottom: 0.35rem; font-weight: 600; }
-.pills { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; border: 0; min-width: 0; }
-.pills legend { flex-basis: 100%; }
-.pill { position: relative; display: inline-block; }
-.pill input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
-.pill span { display: inline-block; padding: 0.5rem 1rem; border: 1px solid var(--muted); border-radius: 999px; background: var(--paper); }
-.pill input:checked + span { background: var(--gauge); border-color: var(--gauge); color: var(--on-gauge); font-weight: 700; }
-.pill input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
+.ratio-choices { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; border: 0; min-width: 0; }
+.ratio-choices legend { flex-basis: 100%; }
+.ratio-choice { position: relative; display: inline-block; }
+.ratio-choice input { position: absolute; inset: 0; width: 100%; height: 100%; margin: 0; opacity: 0; cursor: pointer; }
+.ratio-choice span { display: inline-block; padding: 0.5rem 1rem; border: 1px solid var(--muted); border-radius: 999px; background: var(--paper); }
+.ratio-choice input:checked + span { background: var(--gauge); border-color: var(--gauge); color: var(--on-gauge); font-weight: 700; }
+.ratio-choice input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
 .res-line { margin: 0.9rem 0 0; font-size: 0.9rem; color: var(--muted); }
 .res-inputs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
 .res-inputs label { margin: 0; }
 .res-inputs input { width: 6.5rem; }
 .adjust { margin-top: 1.1rem; }
 .adjust h3 { margin-top: 0; }
-.adjust .pills { margin-top: 0.9rem; }
+.adjust .ratio-choices { margin-top: 0.9rem; }
 .drawer .link-btn { color: var(--ink); }
 
 /* Drawer: Details or Fine-tune, from the right edge */
@@ -549,7 +541,9 @@ legend, .other label { display: block; padding: 0; margin-bottom: 0.35rem; font-
   .fade-in { animation: fade-in 0.3s both; }
   #step-you, #step-to { animation: fade-in 0.15s both; }
   .drawer[open] { animation: slide-in 0.22s ease-out; }
-  button, .pill span, .switch input { transition: background-color 0.12s, border-color 0.12s; }
+  button, .ratio-choice span, .switch input { transition: background-color 0.12s, border-color 0.12s; }
+  .logo img { transition: filter 0.6s ease; }
+  .to-other .size-row, .to-other select { transition: opacity 0.15s; }
 
   @keyframes shrink { from { transform: scale(0.96); } to { transform: scale(0.8); } }
   @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }

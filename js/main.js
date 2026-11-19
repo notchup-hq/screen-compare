@@ -4,16 +4,44 @@ import { createSetup } from './setup.js';
 import { initDetails } from './details.js';
 import { draw, initRender, renderOverview } from './render.js';
 import { matchScreens, nativeResolution } from './detect.js';
-import { smallerThan, smallerThanSize } from './intro.js';
+import { smallerThan, smallerThanSize } from './suggest.js';
 import { parseState, resolveScreen, serializeState, startOverUrl } from './state.js';
 import { accuracy, accuracyText } from './accuracy.js';
 import { RATIOS } from './screens.js';
 import { SIZE_RATIO_CHOICES } from './compare-options.js';
-import { DEFAULT_PX_PER_MM, usableResolution, yourScreen } from './scale.js';
+import { DEFAULT_PX_PER_MM, round1, usableResolution, yourScreen } from './scale.js';
 import { VERSION } from './version.js';
 import { areaRatio, formatCm } from './geometry.js';
 
 const $ = (sel) => document.querySelector(sel);
+
+// Every element this script talks to, looked up once. (#cal-remember and its row are made by
+// initCalibrate, so they are looked up right after it.)
+const ui = {
+  start: $('#start'),
+  result: $('#result'),
+  startBtn: $('#start-btn'),
+  startOverBtn: $('#start-over-btn'),
+  fromBtn: $('#from-btn'),
+  toBtn: $('#to-btn'),
+  fill: $('#fill'),
+  drawingBtn: $('#drawing-btn'),
+  exitView: $('#exit-view'),
+  detailsBtn: $('#details-btn'),
+  tuneBtn: $('#tune-btn'),
+  tuneDot: $('#tune-dot'),
+  tuneState: $('#tune-state'),
+  facts: $('#facts'),
+  overview: $('#overview'),
+  setup: $('#setup'),
+  drawer: $('#drawer'),
+  drawerHeading: $('#drawer-h'),
+  drawerClose: $('#drawer-close'),
+  panelDetails: $('#panel-details'),
+  panelTune: $('#panel-tune'),
+  rememberedStatus: $('#remembered-status'),
+  rememberLive: $('#remember-live'),
+};
 
 $('#version').textContent = `v${VERSION}`;
 
@@ -38,30 +66,38 @@ const noYou = { from: null, size: null, res: null, ratio: null, cal: null };
 const linkHasYou = Boolean(link.from || link.size || link.cal);
 const guess = matchScreens(now.width, now.height, now.dpr);
 const guessedFrom = guess && guess.matches.length === 1 ? guess.matches[0] : null;
-const startProfile = linkHasYou ? null : currentProfile();
-// 'link' | 'profile' | 'guess' | null: where your screen came from. Only a guess is labelled "(detected)".
-let source = linkHasYou ? 'link' : startProfile ? 'profile' : guessedFrom ? 'guess' : null;
-const you0 = source === 'link' ? link : startProfile ? profileYou(startProfile) : { ...noYou, from: guessedFrom };
 
-const state = {
-  ...link,
-  ...you0,
-  ratio: usableResolution(now.width, now.height) ? null : you0.ratio, // only needed when the resolution is no help
-};
-state.to = link.to ?? (state.size ? smallerThanSize(state.size) : smallerThan(state.from));
+/** Your screen without a link: the screen remembered for this display, else the guess, else nothing. */
+function homeScreen() {
+  const profile = currentProfile();
+  return {
+    // Where your screen came from; only a guess is labelled "(detected)".
+    source: profile ? 'profile' : guessedFrom ? 'guess' : null,
+    you: profile ? profileYou(profile) : { ...noYou, from: guessedFrom },
+  };
+}
+const ratioIfNeeded = (you) => ({ ...you, ratio: usableResolution(now.width, now.height) ? null : you.ratio }); // only needed when the resolution is no help
+const suggestedTo = (you) => (you.size ? smallerThanSize(you.size) : smallerThan(you.from));
+
+const initial = linkHasYou ? { source: 'link', you: link } : homeScreen();
+let source = initial.source; // 'link' | 'profile' | 'guess' | null
+
+const state = { ...link, ...ratioIfNeeded(initial.you) };
+state.to = link.to ?? suggestedTo(state);
 
 let view = link.to && (state.from || state.size || state.cal) ? 'result' : 'start';
 
 /** Your screen from what is in `f` ({ from, size, res, ratio, cal }), or null when nothing is known. */
 function yourFor(f) {
+  const { width, height, dpr } = screenNow();
   return yourScreen({
     preset: resolveScreen(f.from),
     sizeIn: f.size,
     res: f.res,
     ratio: RATIOS.find((r) => r.id === f.ratio)?.value ?? null,
     cal: f.cal,
-    css: { width: window.screen.width, height: window.screen.height },
-    dpr: window.devicePixelRatio || 1,
+    css: { width, height },
+    dpr,
   });
 }
 
@@ -75,17 +111,16 @@ function setView(next) {
   view = next;
   if (next === 'result') window.scrollTo(0, 0);
   document.body.dataset.view = next;
-  $('#start').hidden = next !== 'start';
-  $('#result').hidden = next !== 'result';
+  ui.start.hidden = next !== 'start';
+  ui.result.hidden = next !== 'result';
 }
 
 // ---- Remembered screens (js/memory.js is the only code that touches storage).
 const REMEMBER_FAILED = "Couldn't remember this screen in this browser.";
-const startBtn = $('#start-btn');
 
 function rememberNote(text) {
-  $('#remembered-status').textContent = text;
-  $('#remember-live').textContent = text;
+  ui.rememberedStatus.textContent = text;
+  ui.rememberLive.textContent = text;
 }
 
 /** Remember the screen as it is now (a card, a typed size or a model), on this display. */
@@ -122,17 +157,29 @@ function writeUrl() {
   }, 250);
 }
 
+let factsHtml = '';
 function renderFacts(from, to) {
   const dims = (x) => `${formatCm(x.widthMm)} × ${formatCm(x.heightMm)}`;
   const yours = from.basis === 'card'
-    ? `Measured with a card: about ${Math.round(from.diagonalIn * 10) / 10}" (${dims(from)})`
+    ? `Measured with a card: about ${round1(from.diagonalIn)}" (${dims(from)})`
     : `${from.basis === 'model' ? `${sizeName(from)}: ` : ''}${dims(from)} (${+from.diagonalIn.toFixed(2)}" diagonal, ${from.basis === 'size' ? 'typed size' : 'size of the model'})`;
-  $('#facts').innerHTML = `
+  const html = `
     <dl class="facts">
       <dt>Your screen</dt><dd>${yours}</dd>
       <dt>Compared</dt><dd>${sizeName(to)}: ${dims(to)} (${to.diagonalIn}" diagonal)</dd>
       <dt>Area</dt><dd>${Math.round(areaRatio(to, from) * 100)} % of yours</dd>
     </dl>`;
+  if (html === factsHtml) return;
+  factsHtml = html;
+  ui.facts.innerHTML = html;
+}
+
+let overviewKey = '';
+function updateOverview(from, to) {
+  const key = [from.widthMm, from.heightMm, to.name, to.widthMm, to.heightMm].join('|');
+  if (key === overviewKey) return;
+  overviewKey = key;
+  renderOverview(ui.overview, from, to);
 }
 
 async function goFullscreen() {
@@ -145,13 +192,13 @@ function update() {
   if (!from || !to || view !== 'result') return;
   const scale = from.pxPerMm;
   writeUrl();
-  $('#from-btn').textContent = sizeName(from);
-  $('#to-btn').textContent = sizeName(to);
-  $('#fill').checked = state.fill;
-  $('#tune-dot').hidden = !state.cal;
-  $('#tune-state').textContent = state.cal ? ' (adjusted)' : '';
+  ui.fromBtn.textContent = sizeName(from);
+  ui.toBtn.textContent = sizeName(to);
+  ui.fill.checked = state.fill;
+  ui.tuneDot.hidden = !state.cal;
+  ui.tuneState.textContent = state.cal ? ' (adjusted)' : '';
   renderFacts(from, to);
-  renderOverview($('#overview'), from, to);
+  updateOverview(from, to);
   details.sync({ basis: from.basis, res: from.res ?? null, edited: state.res, ratio: state.ratio, to: state.to });
   details.syncRemembered({ available: memory.available(), profiles, currentSig: currentSig() });
   emitCompare(scale, state.cal);
@@ -177,7 +224,7 @@ function update() {
 
 // Resolution and aspect ratios live in the Details drawer. Clearing an edited resolution on a screen
 // that reports none falls back to 16:9, as the setup used to.
-const details = initDetails($('#drawer'), {
+const details = initDetails(ui.drawer, {
   onRename(sig, name) {
     if (memory.rename(sig, name)) refreshMemory();
     else rememberNote(REMEMBER_FAILED);
@@ -204,7 +251,7 @@ const details = initDetails($('#drawer'), {
 });
 
 let applied = false; // the setup closed because a choice was applied (it has just redrawn)
-const setup = createSetup($('#setup'), {
+const setup = createSetup(ui.setup, {
   native: nativeResolution(now.width, now.height, now.dpr),
   diagonalOf: (your) => yourFor(your ?? {})?.diagonalIn ?? null,
   onApply({ cal, from, size, res, ratio, to, remember }) {
@@ -222,7 +269,7 @@ const setup = createSetup($('#setup'), {
     applied = true;
     setView('result');
     update();
-    if (wasStart) $('#to-btn').focus(); // the Start button has just gone away
+    if (wasStart) ui.toBtn.focus(); // the Start button has just gone away
   },
   // "Forget this screen" on the first question: the profile is handed back so Undo can save it again.
   onForget() {
@@ -258,14 +305,14 @@ function openSetup(focus) {
   });
 }
 
-startBtn.addEventListener('click', () => openSetup('from'));
-$('#from-btn').addEventListener('click', () => openSetup('from'));
-$('#to-btn').addEventListener('click', () => openSetup('to'));
+ui.startBtn.addEventListener('click', () => openSetup('from'));
+ui.fromBtn.addEventListener('click', () => openSetup('from'));
+ui.toBtn.addEventListener('click', () => openSetup('to'));
 
-$('#fill').addEventListener('change', (e) => { state.fill = e.target.checked; update(); });
+ui.fill.addEventListener('change', (e) => { state.fill = e.target.checked; update(); });
 
 // Drawer: Details or Fine-tune.
-const drawer = $('#drawer');
+const drawer = ui.drawer;
 let drawerKind = 'details';
 let tuneTouched = false; // the card was moved, or the checkbox was changed, since the drawer opened
 let skipRemember = false;
@@ -279,14 +326,14 @@ function openDrawer(kind) {
     tuneTouched = false;
     skipRemember = false;
   }
-  $('#drawer-h').textContent = tune ? 'Check the real size with a card' : 'Details';
-  $('#panel-details').hidden = tune;
-  $('#panel-tune').hidden = !tune;
+  ui.drawerHeading.textContent = tune ? 'Check the real size with a card' : 'Details';
+  ui.panelDetails.hidden = tune;
+  ui.panelTune.hidden = !tune;
   drawer.showModal();
 }
-$('#details-btn').addEventListener('click', () => openDrawer('details'));
-$('#tune-btn').addEventListener('click', () => openDrawer('tune'));
-$('#drawer-close').addEventListener('click', () => drawer.close());
+ui.detailsBtn.addEventListener('click', () => openDrawer('details'));
+ui.tuneBtn.addEventListener('click', () => openDrawer('tune'));
+ui.drawerClose.addEventListener('click', () => drawer.close());
 drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.close(); });
 // The card drawer opens over the setup dialog; when it closes, put focus back there.
 drawer.addEventListener('close', () => {
@@ -298,12 +345,18 @@ drawer.addEventListener('close', () => {
   tuneTouched = false;
 });
 // Closing the setup without applying drops a card draft: redraw the card at the real scale.
-$('#setup').addEventListener('close', () => {
+ui.setup.addEventListener('close', () => {
   if (applied) applied = false;
   else update();
 });
 
-window.addEventListener('resize', () => update()); // browser zoom fires resize
+// Browser zoom fires resize and changes the scale. One update per frame however many events come; the
+// stage's own redraw is skipped when nothing it draws has changed (see draw in js/render.js).
+let updateFrame = 0;
+window.addEventListener('resize', () => {
+  if (updateFrame) return;
+  updateFrame = requestAnimationFrame(() => { updateFrame = 0; update(); });
+});
 initCalibrate((v) => {
   if (setup.isOpen()) {
     // Measuring from the setup dialog: a draft until "Show at real size".
@@ -321,6 +374,7 @@ initCalibrate((v) => {
     update();
   }
 });
+// Made by initCalibrate above.
 const calRemember = $('#cal-remember');
 const calRememberRow = $('#cal-remember-row');
 calRemember.addEventListener('change', () => { tuneTouched = true; });
@@ -333,23 +387,24 @@ function syncChrome() {
   const fs = Boolean(document.fullscreenElement);
   document.body.classList.toggle('is-fullscreen', fs);
   document.body.classList.toggle('is-drawing', drawingOnly);
-  $('#drawing-btn').setAttribute('aria-pressed', String(drawingOnly));
-  const exit = $('#exit-view');
-  exit.hidden = !(fs || drawingOnly);
-  exit.textContent = fs ? 'Exit full screen' : 'Exit drawing only';
+  ui.drawingBtn.setAttribute('aria-pressed', String(drawingOnly));
+  ui.exitView.hidden = !(fs || drawingOnly);
+  ui.exitView.textContent = fs ? 'Exit full screen' : 'Exit drawing only';
   if (!fs && !drawingOnly) window.scrollTo(0, 0);
 }
 function setDrawingOnly(on, { refocus = false } = {}) {
   drawingOnly = on;
   syncChrome();
-  if (on) $('#exit-view').focus();
-  else if (refocus) $('#drawing-btn').focus();
+  if (on) ui.exitView.focus();
+  else if (refocus) ui.drawingBtn.focus();
 }
 document.addEventListener('fullscreenchange', syncChrome);
-$('#drawing-btn').addEventListener('click', () => setDrawingOnly(true));
-$('#exit-view').addEventListener('click', () => {
-  if (document.fullscreenElement) document.exitFullscreen();
-  else setDrawingOnly(false, { refocus: true });
+ui.drawingBtn.addEventListener('click', () => setDrawingOnly(true));
+ui.exitView.addEventListener('click', () => {
+  if (document.fullscreenElement) {
+    // The button hides itself when full screen ends: hand focus to what is still on screen.
+    document.exitFullscreen().finally(() => (drawingOnly ? ui.exitView : ui.drawingBtn).focus());
+  } else setDrawingOnly(false, { refocus: true });
 });
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && drawingOnly && !document.querySelector('dialog[open]')) setDrawingOnly(false, { refocus: true });
@@ -363,16 +418,15 @@ function startOver() {
   syncChrome();
   try { history.replaceState(null, '', startOverUrl(location.pathname, location.hash)); } catch { /* nothing to clear */ }
   // Back to where you started: the screen remembered for this display, else the guess. Nothing is deleted.
-  const p = currentProfile();
-  source = p ? 'profile' : guessedFrom ? 'guess' : null;
-  const you = p ? profileYou(p) : { ...noYou, from: guessedFrom };
-  Object.assign(state, { ...you, ratio: usableResolution(now.width, now.height) ? null : you.ratio, fill: false });
-  state.to = state.size ? smallerThanSize(state.size) : smallerThan(state.from);
+  const home = homeScreen();
+  source = home.source;
+  Object.assign(state, ratioIfNeeded(home.you), { fill: false });
+  state.to = suggestedTo(state);
   setView('start');
   window.scrollTo(0, 0);
-  $('#start-btn').focus();
+  ui.startBtn.focus();
 }
-$('#start-over-btn').addEventListener('click', startOver);
+ui.startOverBtn.addEventListener('click', startOver);
 
 setView(view);
 update();

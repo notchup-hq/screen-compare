@@ -9,7 +9,7 @@ import { resolveScreen } from './state.js';
 import {
   groupedScreens, laptopModels, kindForDiagonal, otherChoice, STEP2_SIZES, SIZE_RATIO_CHOICES,
 } from './compare-options.js';
-import { SIZE_MAX_IN, SIZE_MIN_IN, usableResolution, validSize } from './scale.js';
+import { SIZE_MAX_IN, SIZE_MIN_IN, round1, usableResolution, validSize } from './scale.js';
 import { parseSize, sizeStepper } from './size-field.js';
 import { rememberedLine } from './memory.js';
 
@@ -63,14 +63,17 @@ function sizeButton({ preset, label, name }, screen, scale, boxHeight) {
 
 /**
  * @param {HTMLDialogElement} dialog
- * @param {{ onApply: Function, onMeasure: Function, native: number[]|null, diagonalOf: Function }} deps
- *   native: the screen's resolution as the browser reports it, [long, short], or null.
- *   diagonalOf(your): the diagonal in inches of what readYour() returned, or null.
+ * @param {object} deps
+ * @param {(choice: object) => void} deps.onApply the visitor finished: { cal | from | size/res/ratio, to, remember }
+ * @param {(draft: { your: object|null, cal: number|null }) => void} deps.onMeasure "Measure with a bank card" was pressed
+ * @param {() => (object|null)} deps.onForget "Forget this screen": deletes the remembered screen and returns it, for Undo
+ * @param {(profile: object) => boolean} deps.onRestore Undo: saves that screen again, true when it worked
+ * @param {number[]|null} deps.native the screen's resolution as the browser reports it, [long, short], or null
+ * @param {(your: object|null) => (number|null)} deps.diagonalOf the diagonal in inches of what readYour() returned
  */
 export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, native, diagonalOf }) {
   const stepYou = $(dialog, '#step-you');
   const stepTo = $(dialog, '#step-to');
-  const youH = $(dialog, '#you-h');
   const toH = $(dialog, '#to-h');
   const back = $(dialog, '#setup-back');
   const youKnown = $(dialog, '#you-known');
@@ -170,7 +173,7 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
     knownChange.textContent = isRemembered ? 'Measure again' : 'No, change it';
     if (known) {
       const d = you ? diagonalOf(you) : null;
-      const inches = d ? `${Math.round(d * 10) / 10}"` : '';
+      const inches = d ? `${round1(d)}"` : '';
       if (isRemembered) {
         knownText.textContent = `Your screen: ${preset && modelIds.has(preset) ? resolveScreen(preset).short : inches}`;
         knownRemembered.textContent = rememberedLine(remembered.saved);
@@ -254,7 +257,7 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
       const d = diagonalOf(readYour() ?? {});
       remembered = null;
       forget();
-      sizeInput.value = d ? String(Math.round(d * 10) / 10) : '';
+      sizeInput.value = d ? String(round1(d)) : '';
       changing = false;
     } else {
       forget();

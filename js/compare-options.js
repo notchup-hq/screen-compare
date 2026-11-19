@@ -1,19 +1,19 @@
 // Pure helpers for the setup dialog and the Details drawer: how presets are grouped in the lists, the
-// four sizes offered in the second question, and how size pills map to screen specs. No DOM, so
-// tests can import it.
+// four sizes offered in the second question, and how a generic laptop size maps to a screen spec in
+// another aspect ratio. No DOM, so tests can import it.
 
 import { SCREENS, RATIOS } from './screens.js';
 import { resolveScreen, customSpec } from './state.js';
-import { validSize } from './scale.js';
+import { round1, validSize } from './scale.js';
 import { parseSize } from './size-field.js';
 
 /** Order of the headings in the screen lists. */
 export const GROUPS = ['Apple', 'Framework', 'Microsoft', 'Generic laptops', 'Monitors'];
 
-/** Aspect ratios offered for generic laptop sizes in "Compare with". */
+/** Aspect ratios Details offers for a generic laptop size you compare with. */
 export const RATIO_CHOICES = RATIOS.filter((r) => ['16x10', '16x9', '3x2'].includes(r.id));
 
-/** Ratio chips for a typed "Your screen" size, shown only when the resolution is unusable. */
+/** Aspect ratios Details offers for a typed size of your own screen, only when the resolution is unusable. */
 export const SIZE_RATIO_CHOICES = ['16x9', '16x10', '3x2', '21x9'].map((id) => RATIOS.find((r) => r.id === id));
 
 /** A screen this size or bigger counts as a monitor; smaller ones as a laptop. */
@@ -48,7 +48,7 @@ export function otherSizeSpec(inches, kind) {
   if (!validSize(inches)) return null;
   const ratioId = kind === 'monitor' ? '16x9' : '16x10';
   const ratio = RATIOS.find((r) => r.id === ratioId).value;
-  const d = Math.round(inches * 10) / 10;
+  const d = round1(inches);
   const preset = SCREENS.find((s) => !s.source && s.kind === kind && s.diagonalIn === d && Math.abs(s.resX / s.resY - ratio) < 0.01);
   return preset ? preset.id : customSpec(d, ratioId);
 }
@@ -77,31 +77,10 @@ export function otherChoice({ active = null, sizeText = '', modelId = '', kind, 
     const n = parseSize(sizeText);
     if (!validSize(n)) return { use, spec: null, label: 'Show' };
     const spec = keep && n === keep.size ? keep.spec : otherSizeSpec(n, kind);
-    return { use, spec, label: `Show ${Math.round(n * 10) / 10}"` };
+    return { use, spec, label: `Show ${round1(n)}"` };
   }
   return { use: null, spec: null, label: 'Show' };
 }
-
-/** The common sizes shown as pills. Each is a generic preset ("typical panel"). */
-export const SIZE_PILLS = [
-  { id: '13', label: '13"', preset: 'g133' },
-  { id: '14', label: '14"', preset: 'g14' },
-  { id: '15', label: '15"', preset: 'g156' },
-  { id: '16', label: '16"', preset: 'g16' },
-];
-
-/** Monitor sizes in "Compare with" (generic presets, no ratio row: the ratio is part of the pill). */
-export const MONITOR_PILLS = [
-  { id: 'm215', label: '21.5"', preset: 'm215' },
-  { id: 'm24', label: '24"', preset: 'm24' },
-  { id: 'm24w', label: '24" 16:10', preset: 'm24w' },
-  { id: 'm27', label: '27"', preset: 'm27' },
-  { id: 'm32', label: '32"', preset: 'm32' },
-  { id: 'm34', label: '34" ultrawide', preset: 'm34' },
-];
-
-/** The pill that opens the model list. */
-export const MODEL_PILL = 'model';
 
 /** Presets as [{ group, screens }], in heading order. */
 export function groupedScreens(screens = SCREENS) {
@@ -115,44 +94,36 @@ export function laptopModels() {
   return groupedScreens(SCREENS.filter((s) => s.kind === 'laptop' && s.source));
 }
 
-function ratioIdOf(screen) {
-  const value = screen.resX / screen.resY;
-  return RATIOS.find((r) => Math.abs(r.value - value) < 0.01)?.id ?? null;
-}
+/** The four generic laptop sizes: the buttons of the second question, and the sizes whose ratio Details can change. */
+export const LAPTOP_SIZES = STEP2_SIZES.laptop;
 
-/** The ratio a size pill starts with (that of its generic preset). */
-export function defaultRatio(pillId) {
-  const pill = SIZE_PILLS.find((p) => p.id === pillId);
-  const preset = pill && SCREENS.find((s) => s.id === pill.preset);
-  return (preset && ratioIdOf(preset)) ?? RATIO_CHOICES[0].id;
+const presetOf = (id) => SCREENS.find((s) => s.id === id);
+
+/** The aspect ratio id a generic preset starts with (that of its panel). */
+function defaultRatioId(presetId) {
+  const s = presetOf(presetId);
+  const value = s.resX / s.resY;
+  return RATIOS.find((r) => Math.abs(r.value - value) < 0.01)?.id ?? RATIO_CHOICES[0].id;
 }
 
 /**
- * Which pill (and ratio) stands for a screen spec. Presets that are not one of the
- * generic pill sizes, and custom sizes that match no pill, belong to the model list.
+ * Which generic laptop size (and ratio) a screen spec stands for: a preset of that size, or a custom
+ * size of the same diagonal in one of the offered ratios. Null for anything else (models, monitors,
+ * other sizes), which have no ratio to change.
  */
-export function pillFor(spec) {
+export function laptopSizeFor(spec) {
   const screen = resolveScreen(spec);
-  if (!screen) return { pill: null, ratioId: null };
-  const monitor = MONITOR_PILLS.find((p) => p.preset === spec);
-  if (monitor) return { pill: monitor.id, ratioId: null };
-  const direct = SIZE_PILLS.find((p) => p.preset === spec);
-  if (direct) return { pill: direct.id, ratioId: defaultRatio(direct.id) };
-  if (screen.custom) {
-    const byDiagonal = SIZE_PILLS.find((p) => SCREENS.find((s) => s.id === p.preset)?.diagonalIn === screen.diagonalIn);
-    if (byDiagonal && RATIO_CHOICES.some((r) => r.id === screen.ratioId)) return { pill: byDiagonal.id, ratioId: screen.ratioId };
-  }
-  return { pill: MODEL_PILL, ratioId: null };
+  if (!screen) return null;
+  const direct = LAPTOP_SIZES.find((p) => p.preset === spec);
+  if (direct) return { preset: direct.preset, ratioId: defaultRatioId(direct.preset) };
+  if (!screen.custom || !RATIO_CHOICES.some((r) => r.id === screen.ratioId)) return null;
+  const sameSize = LAPTOP_SIZES.find((p) => presetOf(p.preset).diagonalIn === screen.diagonalIn);
+  return sameSize ? { preset: sameSize.preset, ratioId: screen.ratioId } : null;
 }
 
-/** The screen spec for a pill, a ratio and (for the model pill) a model id; null if incomplete. */
-export function specFor(pillId, ratioId, modelId) {
-  if (pillId === MODEL_PILL) return resolveScreen(modelId) ? modelId : null;
-  const monitor = MONITOR_PILLS.find((p) => p.id === pillId);
-  if (monitor) return monitor.preset;
-  const pill = SIZE_PILLS.find((p) => p.id === pillId);
-  const preset = pill && SCREENS.find((s) => s.id === pill.preset);
-  if (!preset) return null;
-  if (!ratioId || ratioId === defaultRatio(pillId)) return preset.id;
-  return customSpec(preset.diagonalIn, ratioId);
+/** The screen spec for a generic laptop size in a ratio: the preset itself in its own ratio, else a custom size. Null if not one of the four. */
+export function laptopSpec(presetId, ratioId) {
+  if (!LAPTOP_SIZES.some((p) => p.preset === presetId)) return null;
+  if (!ratioId || ratioId === defaultRatioId(presetId)) return presetId;
+  return customSpec(presetOf(presetId).diagonalIn, ratioId);
 }
