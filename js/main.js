@@ -3,7 +3,8 @@ import { createSetup } from './setup.js';
 import { draw, initRender, renderOverview } from './render.js';
 import { matchScreens } from './detect.js';
 import { smallerThan } from './intro.js';
-import { parseState, resolveScreen, serializeState } from './state.js';
+import { parseState, resolveScreen, serializeState, startOverUrl } from './state.js';
+import { accuracy } from './accuracy.js';
 import { VERSION } from './version.js';
 import { areaRatio, formatCm, pxPerMm } from './geometry.js';
 
@@ -31,6 +32,7 @@ const sizeName = (screen) => screen.short ?? screen.name;
 
 function setView(next) {
   view = next;
+  if (next === 'result') window.scrollTo(0, 0);
   document.body.dataset.view = next;
   $('#start').hidden = next !== 'start';
   $('#result').hidden = next !== 'result';
@@ -72,11 +74,18 @@ function update() {
   $('#tune-state').textContent = state.cal ? ' (adjusted)' : '';
   renderFacts(from, to);
   renderOverview($('#overview'), from, to);
-  document.dispatchEvent(new CustomEvent('compare', { detail: { scale } }));
+  document.dispatchEvent(new CustomEvent('compare', { detail: { scale, cal: state.cal } }));
   draw({
     from,
     to,
     scale,
+    accuracy: accuracy({
+      cal: state.cal,
+      screen: { width: window.screen.width, height: window.screen.height, dpr: window.devicePixelRatio || 1 },
+      win: { outerWidth: window.outerWidth, innerWidth: window.innerWidth },
+      chosen: from,
+    }),
+    onCheckCard: () => openDrawer('tune'),
     fill: state.fill,
     pct: Math.round(areaRatio(to, from) * 100),
     canFullscreen: document.fullscreenEnabled === true,
@@ -135,7 +144,7 @@ $('#fill').addEventListener('change', (e) => { state.fill = e.target.checked; up
 const drawer = $('#drawer');
 function openDrawer(kind) {
   const tune = kind === 'tune';
-  $('#drawer-h').textContent = tune ? 'Fine-tune with a bank card' : 'Details';
+  $('#drawer-h').textContent = tune ? 'Check the real size with a card' : 'Details';
   $('#panel-details').hidden = tune;
   $('#panel-tune').hidden = !tune;
   drawer.showModal();
@@ -145,17 +154,55 @@ $('#tune-btn').addEventListener('click', () => openDrawer('tune'));
 $('#drawer-close').addEventListener('click', () => drawer.close());
 drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.close(); });
 
+window.addEventListener('resize', () => update()); // browser zoom fires resize
 initCalibrate((v) => { state.cal = v; update(); });
 initRender();
 
-// Full screen: the toolbar and footer step aside; Esc or the button on the stage leaves it.
-function syncFullscreen() {
-  const on = Boolean(document.fullscreenElement);
-  document.body.classList.toggle('is-fullscreen', on);
-  $('#exit-fs').hidden = !on;
+// Full screen and Drawing only: the toolbar and footer step aside. A floating Exit button is always
+// there, and Esc leaves Drawing only (the browser handles Esc in full screen itself).
+let drawingOnly = false;
+function syncChrome() {
+  const fs = Boolean(document.fullscreenElement);
+  document.body.classList.toggle('is-fullscreen', fs);
+  document.body.classList.toggle('is-drawing', drawingOnly);
+  $('#drawing-btn').setAttribute('aria-pressed', String(drawingOnly));
+  const exit = $('#exit-view');
+  exit.hidden = !(fs || drawingOnly);
+  exit.textContent = fs ? 'Exit full screen' : 'Exit drawing only';
+  if (!fs && !drawingOnly) window.scrollTo(0, 0);
 }
-document.addEventListener('fullscreenchange', syncFullscreen);
-$('#exit-fs').addEventListener('click', () => document.exitFullscreen());
+function setDrawingOnly(on, { refocus = false } = {}) {
+  drawingOnly = on;
+  syncChrome();
+  if (on) $('#exit-view').focus();
+  else if (refocus) $('#drawing-btn').focus();
+}
+document.addEventListener('fullscreenchange', syncChrome);
+$('#drawing-btn').addEventListener('click', () => setDrawingOnly(true));
+$('#exit-view').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else setDrawingOnly(false, { refocus: true });
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && drawingOnly && !document.querySelector('dialog[open]')) setDrawingOnly(false, { refocus: true });
+});
+
+// Start over: clear the comparison from the link and return to the start view.
+$('#start-over-btn').addEventListener('click', () => {
+  clearTimeout(urlTimer);
+  if (document.fullscreenElement) document.exitFullscreen();
+  drawingOnly = false;
+  syncChrome();
+  try { history.replaceState(null, '', startOverUrl(location.pathname, location.hash)); } catch { /* nothing to clear */ }
+  state.from = guessedFrom;
+  state.to = smallerThan(guessedFrom);
+  state.cal = null;
+  state.fill = false;
+  fromSource = guessedFrom ? 'detected' : null;
+  setView('start');
+  window.scrollTo(0, 0);
+  $('#start-btn').focus();
+});
 
 setView(view);
 update();

@@ -53,6 +53,8 @@
       </div>
       <label class="switch"><input type="checkbox" role="switch" id="fill"><span>Sample content</span></label>
       <div class="tools">
+        <button type="button" id="drawing-btn" aria-pressed="false">Drawing only</button>
+        <button type="button" id="start-over-btn">Start over</button>
         <button type="button" id="tune-btn" aria-haspopup="dialog">Fine-tune<span class="dot" id="tune-dot" hidden></span><span class="visually-hidden" id="tune-state"></span></button>
         <button type="button" id="details-btn" aria-haspopup="dialog">Details</button>
       </div>
@@ -60,7 +62,7 @@
     <main class="stage-wrap">
       <div class="stage" id="stage"></div>
       <p class="visually-hidden" id="live" aria-live="polite"></p>
-      <button type="button" class="exit-fs" id="exit-fs" hidden>Exit full screen</button>
+      <button type="button" class="exit-fs" id="exit-view" hidden>Exit</button>
     </main>
   </div>
 
@@ -122,7 +124,7 @@
         <h3 id="notes-h">How accurate is this?</h3>
         <p>Browsers cannot read the physical size of a screen, so the size is worked out from the screen you pick. This assumes the browser is on the laptop's built-in screen, in a window at 100 % zoom. On an external monitor or at another zoom level the sizes will be off. Use Fine-tune with a bank card to correct it.</p>
         <p>If the link does not name your screen, the page guesses it from the screen's resolution and offers it as a suggestion. Display scaling, browser zoom and external monitors change what the browser reports, so check the guess. It runs in your browser; nothing is sent or stored.</p>
-        <p>Nothing is stored and nothing leaves your browser. Your choices live in this page's link, so you can share it.</p>
+        <p>Nothing is stored and nothing leaves your browser. Your choices live in this page's link, so you can share it. Bookmark this page to keep this comparison; nothing else is saved.</p>
       </section>
     </div>
     <div id="panel-tune" hidden>

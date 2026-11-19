@@ -6,22 +6,27 @@ import { BANK_CARD_MM } from './screens.js';
 export function initCalibrate(onChange) {
   const body = document.getElementById('cal-body');
   body.innerHTML = `
-    <p>Hold a bank card against the screen. Drag the slider until the card below is the same size as the real one. This replaces the size worked out from the screen you picked.</p>
+    <p>This adjusts the scale so the outline is truly real size on this screen.</p>
+    <p>Hold a bank card against the screen and drag the slider until the card below is the same size as the real one.</p>
     <div class="card-stage"><div class="card" id="cal-card" aria-hidden="true"></div></div>
-    <label class="cal-slider">Card size
-      <input type="range" id="cal-range" min="2" max="10" step="0.01">
-    </label>
-    <p><button type="button" id="cal-reset">Reset to calculated size</button></p>
+    <div class="cal-row">
+      <label class="cal-slider">Card size
+        <input type="range" id="cal-range" min="2" max="10" step="0.01">
+      </label>
+      <button type="button" id="cal-reset">Reset fine-tune</button>
+    </div>
     <p class="cal-note">Card: ${BANK_CARD_MM.width} × ${BANK_CARD_MM.height} mm (ISO/IEC 7810 ID-1).</p>`;
 
   const card = body.querySelector('#cal-card');
   const range = body.querySelector('#cal-range');
 
   range.addEventListener('input', () => onChange(Number(range.value)));
-  body.querySelector('#cal-reset').addEventListener('click', () => onChange(null));
+  const reset = body.querySelector('#cal-reset');
+  reset.addEventListener('click', () => { onChange(null); range.focus(); });
 
   document.addEventListener('compare', (e) => {
-    const { scale } = e.detail;
+    const { scale, cal } = e.detail;
+    reset.disabled = !cal;
     card.style.width = `${BANK_CARD_MM.width * scale}px`;
     card.style.height = `${BANK_CARD_MM.height * scale}px`;
     card.style.borderRadius = `${3.2 * scale}px`;

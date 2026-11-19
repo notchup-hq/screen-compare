@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseState, serializeState, resolveScreen, customSpec } from '../js/state.js';
+import { parseState, serializeState, resolveScreen, customSpec, startOverUrl } from '../js/state.js';
 
 const defaults = { from: 'mbp16', to: 'mbp14' };
 
@@ -33,4 +33,21 @@ test('sample content is off by default and on only with fill=1', () => {
 
 test('a missing from stays null so the page can ask', () => {
   assert.equal(parseState('', { from: null, to: 'mbp14' }).from, null);
+});
+
+test('start over drops the whole query and keeps the path', () => {
+  assert.equal(startOverUrl('/app/', ''), '/app/');
+  assert.equal(startOverUrl('/', '#top'), '/#top');
+});
+
+test('reset fine-tune: no cal in the link', () => {
+  const s = { from: 'mbp16', to: 'mbp14', cal: null, fill: false };
+  assert.ok(!serializeState(s).includes('cal'));
+  assert.equal(parseState(serializeState({ ...s, cal: 4.2 }), defaults).cal, 4.2);
+  assert.equal(parseState(serializeState(s), defaults).cal, null);
+});
+
+test('after start over the link names no comparison', () => {
+  const p = new URLSearchParams('');
+  assert.equal(resolveScreen(p.get('to')), null);
 });

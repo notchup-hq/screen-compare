@@ -56,3 +56,8 @@ export function serializeState(state) {
   if (state.fill) p.set('fill', '1');
   return `?${p}`;
 }
+
+/** The page address with the comparison removed: what "Start over" puts in the address bar. */
+export function startOverUrl(pathname, hash = '') {
+  return `${pathname}${hash}`;
+}
