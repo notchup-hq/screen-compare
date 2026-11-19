@@ -466,6 +466,7 @@ legend, .other label { display: block; padding: 0; margin-bottom: 0.35rem; font-
   border: 0;
   border-left: 1px solid var(--line);
 }
+@media (max-width: 30rem) { .drawer { padding-inline: 0.75rem; } }
 .drawer-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
 .drawer-head h2 { margin: 0; font-size: 1.2rem; }
 #drawer-close { min-width: 2.4rem; font-size: 1.2rem; line-height: 1; }
@@ -523,7 +524,12 @@ legend, .other label { display: block; padding: 0; margin-bottom: 0.35rem; font-
 .key-to { border-color: var(--gauge); background: var(--gauge-soft); }
 
 /* Calibration: the bank card at true card size */
-.card-stage { padding: 0.5rem 0; overflow-x: auto; }
+/* Never scrolled sideways: a card wider than the window is drawn upright, and on a screen narrower
+   than a card it is cut at the right edge, so its top and bottom edges still line up. */
+.card-stage { padding: 0.5rem 0; overflow: hidden; }
+/* The fine-tune drawer grows to fit the card at true size, up to the full window. */
+.drawer.drawer-tune { width: min(100vw, max(30rem, calc(var(--card-w, 0px) + 2.5rem + 1px))); }
+.cal-turn { font-weight: 600; }
 .card {
   flex: none;
   border: 2px solid var(--gauge);
