@@ -102,7 +102,11 @@ function chipStack(from, to, pct, { accuracy, accuracyLabel, onCheckCard }) {
     b.addEventListener('click', onCheckCard);
     line.append(' ', b);
   }
-  stack.append(chip, line);
+  // Names both screens where the toolbar that normally does is hidden (full screen, Drawing only; see the CSS).
+  const named = (s) => s.short ?? s.name;
+  const context = el('p', 'chip-context', `${named(to)} vs ${named(from)}`);
+  context.setAttribute('aria-hidden', 'true');
+  stack.append(chip, context, line);
   return stack;
 }
 

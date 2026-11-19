@@ -264,6 +264,8 @@ select { width: 100%; }
   background: var(--stage-gold);
   border-radius: 999px;
 }
+.chip-context { display: none; margin: 0; color: var(--brand-cream); font-size: 0.9rem; font-weight: 600; text-align: center; }
+.is-fullscreen .chip-context, .is-drawing .chip-context { display: block; }
 .chip-stack { z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 0.35rem; max-width: calc(100% - 1.5rem); }
 .frame .chip-stack { position: absolute; left: 50%; bottom: 14px; width: max-content; transform: translateX(-50%); }
 .accuracy { margin: 0; font-size: 0.8rem; text-align: center; color: var(--brand-cream); }
