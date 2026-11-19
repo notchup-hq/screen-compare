@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSize, stepSize } from '../js/size-field.js';
+import { cleanSizeText, isClearKey, parseSize, stepDirection, stepSize } from '../js/size-field.js';
 
 test('parseSize accepts a dot or a comma and rejects the rest', () => {
   assert.equal(parseSize('15,6'), 15.6);
@@ -38,4 +38,26 @@ test('stepSize clamps to 10-100', () => {
   assert.equal(stepSize(10.2, -1), 10);
   assert.equal(stepSize(5, 1), 10);
   assert.equal(stepSize(null, -1, 10), 10);
+});
+
+test('cleanSizeText keeps digits and one decimal separator only', () => {
+  assert.equal(cleanSizeText('sdads'), '');
+  assert.equal(cleanSizeText('2a4'), '24');
+  assert.equal(cleanSizeText('15,6'), '15,6');
+  assert.equal(cleanSizeText('15.6.2'), '15.62');
+  assert.equal(cleanSizeText('1,5.5'), '1,55');
+  assert.equal(cleanSizeText('-3 in'), '3');
+  assert.equal(cleanSizeText(null), '');
+});
+
+test('stepDirection: arrows and plus/minus keys step, other keys do not', () => {
+  for (const key of ['ArrowUp', 'ArrowRight', '+', '=']) assert.equal(stepDirection(key), 1, key);
+  for (const key of ['ArrowDown', 'ArrowLeft', '-']) assert.equal(stepDirection(key), -1, key);
+  for (const key of ['1', '.', ',', 'Backspace', 'Tab', 'Enter', 'Home', undefined]) assert.equal(stepDirection(key), 0, String(key));
+});
+
+test('only C clears the size field', () => {
+  assert.equal(isClearKey('c'), true);
+  assert.equal(isClearKey('C'), true);
+  for (const key of ['x', 'Delete', 'Backspace', 'Escape', '1', undefined]) assert.equal(isClearKey(key), false, String(key));
 });

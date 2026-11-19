@@ -15,6 +15,31 @@ export function parseSize(text) {
   return Number.isFinite(n) ? n : null;
 }
 
+/** What a size field may hold: digits and at most one decimal separator (a dot or a comma). Everything else is dropped. */
+export function cleanSizeText(text) {
+  let seenSeparator = false;
+  let out = '';
+  for (const ch of String(text ?? '')) {
+    if (ch >= '0' && ch <= '9') out += ch;
+    else if ((ch === '.' || ch === ',') && !seenSeparator) { seenSeparator = true; out += ch; }
+  }
+  return out;
+}
+
+/**
+ * The direction a key steps the size: +1 (larger) or -1 (smaller), 0 for any other key. Left and Right
+ * follow the − and + buttons either side of the field, Up and Down are the usual spinbutton keys, and
+ * the + and − keys work too (a bare = counts as +, it is the same key on most keyboards).
+ */
+export function stepDirection(key) {
+  if (key === 'ArrowUp' || key === 'ArrowRight' || key === '+' || key === '=') return 1;
+  if (key === 'ArrowDown' || key === 'ArrowLeft' || key === '-') return -1;
+  return 0;
+}
+
+/** C clears the field, so someone who wants to retype the number is not stuck now that Left and Right step it. */
+export const isClearKey = (key) => key === 'c' || key === 'C';
+
 /**
  * The next half inch in the direction `dir` (+1 or -1), clamped to the accepted range. An empty field
  * (`current` null) starts from `start`, so + gives start + 0.5 and - gives start - 0.5.
@@ -27,7 +52,7 @@ export function stepSize(current, dir, start = 24) {
 }
 
 /**
- * Wire `input` with its − and + buttons. The buttons and ArrowUp/ArrowDown write the new value and fire
+ * Wire `input` with its − and + buttons. The buttons and the step keys (see stepDirection) write the new value and fire
  * an `input` event, so the owner's own handler runs as if it was typed. Returns `sync()`, which refreshes
  * the spinbutton's aria values; call it after setting `input.value` from code.
  */
@@ -48,12 +73,30 @@ export function sizeStepper(input, minus, plus, { start = 24 } = {}) {
   };
   input.setAttribute('aria-valuemin', String(SIZE_MIN_IN));
   input.setAttribute('aria-valuemax', String(SIZE_MAX_IN));
-  input.addEventListener('input', sync);
-  input.addEventListener('keydown', (e) => {
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      step(e.key === 'ArrowUp' ? 1 : -1);
+  // Typing, pasting and dictation all end up here: letters never stay in the field. This listener is
+  // added first, so the owner's own `input` handler already sees the cleaned value.
+  input.addEventListener('input', () => {
+    const clean = cleanSizeText(input.value);
+    if (clean !== input.value) {
+      const caret = input.selectionStart ?? clean.length;
+      const removed = input.value.length - clean.length;
+      input.value = clean;
+      input.setSelectionRange(Math.max(0, caret - removed), Math.max(0, caret - removed));
     }
+    sync();
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.ctrlKey || e.metaKey || e.altKey) return; // leave shortcuts such as Ctrl+- (zoom) and Ctrl+C (copy) alone
+    if (isClearKey(e.key)) {
+      e.preventDefault();
+      input.value = '';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      return;
+    }
+    const dir = stepDirection(e.key);
+    if (!dir) return;
+    e.preventDefault();
+    step(dir);
   });
   minus.addEventListener('click', () => { step(-1); input.focus(); });
   plus.addEventListener('click', () => { step(1); input.focus(); });
