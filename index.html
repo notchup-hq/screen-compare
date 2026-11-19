@@ -49,7 +49,6 @@
         <button type="button" class="screen-btn" id="from-btn" aria-haspopup="dialog"></button>
         <span>vs</span>
         <button type="button" class="screen-btn" id="to-btn" aria-haspopup="dialog"></button>
-        <button type="button" id="swap-btn" class="icon-btn" aria-label="Swap the two screens" title="Swap the two screens"><span aria-hidden="true">⇄</span></button>
       </div>
       <label class="switch"><input type="checkbox" role="switch" id="fill"><span>Sample content</span></label>
       <div class="tools">
@@ -73,41 +72,73 @@
     <a id="version" href="https://github.com/notchup-hq/screen-compare/blob/main/CHANGELOG.md">Changelog</a>
   </footer>
 
-  <!-- 2. Setup: two steps on one screen. Plain controls; no form element, nothing is submitted. -->
-  <dialog class="dialog" id="setup" aria-labelledby="setup-h">
+  <!-- 2. Setup: two questions, one per step. Plain controls; no form element, nothing is submitted. -->
+  <dialog class="dialog" id="setup" aria-labelledby="you-h">
     <div class="dialog-body">
-      <h2 id="setup-h">Compare screens</h2>
-
-      <div class="field">
-        <label for="from-select">Your screen</label>
-        <select id="from-select" aria-describedby="from-note"></select>
-        <div class="other" id="from-other" hidden>
-          <label for="from-diag">Diagonal in inches</label>
-          <input type="number" id="from-diag" inputmode="decimal" min="5" max="30" step="0.1" value="16">
-          <fieldset class="pills">
-            <legend>Aspect ratio</legend>
-          </fieldset>
-        </div>
-        <p class="note" id="from-note"></p>
+      <div class="dialog-top">
+        <button type="button" class="back" id="setup-back" hidden>‹ Back</button>
+        <button type="button" class="close" id="setup-close" aria-label="Close">×</button>
       </div>
 
-      <fieldset class="field to-field" id="to-field">
-        <legend>Compare with</legend>
-        <div class="pills" id="to-pills"></div>
-        <p class="note" id="to-note">Typical panels: 13.3", 14", 15.6", 16".</p>
-        <fieldset class="pills" id="to-ratio" hidden>
-          <legend>Aspect ratio</legend>
-        </fieldset>
-        <div class="other" id="to-model" hidden>
-          <label for="to-select">Model</label>
+      <section id="step-you">
+        <h2 id="you-h" tabindex="-1">How big is your screen?</h2>
+
+        <div id="you-known" hidden>
+          <p class="hero"><svg class="tick" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg><span id="known-text"></span></p>
+          <button type="button" class="primary" id="known-ok">That's right</button>
+          <button type="button" class="link-btn" id="known-change">No, change it</button>
+        </div>
+
+        <div id="you-ask">
+          <label class="visually-hidden" for="size-input">Screen size in inches</label>
+          <div class="size-row">
+            <button type="button" class="step-btn" id="size-minus" aria-label="Smaller" aria-controls="size-input"><span aria-hidden="true">&minus;</span></button>
+            <input type="text" id="size-input" role="spinbutton" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="24" aria-describedby="size-error">
+            <button type="button" class="step-btn" id="size-plus" aria-label="Larger" aria-controls="size-input"><span aria-hidden="true">+</span></button>
+            <span class="unit" aria-hidden="true">inches</span>
+          </div>
+          <p class="note error" id="size-error" hidden></p>
+          <details class="hint">
+            <summary>Why do you ask?</summary>
+            <p>Your browser knows how many pixels your screen has, but not how big it is in centimetres. With the size in inches we can work out the real scale. A 24" monitor and a 27" monitor can both be 1920 × 1080, so the pixels alone can't tell them apart.</p>
+            <p><strong>Where to find it:</strong> the box, the sticker on the back or under the stand, the receipt, or the maker's spec page. Laptops: the model name is usually on the bottom. Curved screens: use the size the maker quotes.</p>
+            <p><strong>Not sure?</strong> Measure with a bank card: every bank card is the same size (8.56 × 5.4 cm), so you can match one on screen and we take the scale from that.</p>
+          </details>
+          <button type="button" class="primary" id="size-next">Next</button>
+          <div class="model-wrap" id="model-wrap" hidden>
+            <label class="visually-hidden" for="model-select">Your laptop model</label>
+            <select id="model-select"></select>
+          </div>
+          <button type="button" class="link-btn" id="model-btn" aria-expanded="false" aria-controls="model-wrap" hidden>Pick your laptop model</button>
+          <button type="button" class="link-btn" id="card-btn" aria-haspopup="dialog">Don't know? Measure with a bank card</button>
+        </div>
+      </section>
+
+      <section id="step-to" hidden>
+        <h2 id="to-h" tabindex="-1">Which screen size do you want to see?</h2>
+        <div class="size-grid" id="to-sizes"></div>
+        <details class="hint">
+          <summary>How accurate is this?</summary>
+          <p>The outline is drawn at real size, usually within a few millimetres. It's off if your browser zoom isn't 100 % (Ctrl+0 resets it), or if the size you gave isn't right. The bank card check in Details makes it exact.</p>
+          <p>Nothing you enter leaves this page. No cookies, no tracking.</p>
+        </details>
+        <button type="button" class="link-btn" id="other-btn" aria-expanded="false" aria-controls="to-other">Other size or a specific model</button>
+        <div class="to-other" id="to-other" hidden>
+          <label class="visually-hidden" for="other-size">Size in inches</label>
+          <div class="size-row">
+            <button type="button" class="step-btn" id="other-minus" aria-label="Smaller" aria-controls="other-size"><span aria-hidden="true">&minus;</span></button>
+            <input type="text" id="other-size" role="spinbutton" inputmode="decimal" autocomplete="off" spellcheck="false" placeholder="22" aria-describedby="other-error">
+            <button type="button" class="step-btn" id="other-plus" aria-label="Larger" aria-controls="other-size"><span aria-hidden="true">+</span></button>
+            <span class="unit" aria-hidden="true">inches</span>
+          </div>
+          <p class="note error" id="other-error" hidden></p>
+          <label class="visually-hidden" for="to-select">A specific model</label>
           <select id="to-select"></select>
+          <p class="visually-hidden" id="other-unused-size">Not used: the model below is used instead.</p>
+          <p class="visually-hidden" id="other-unused-model">Not used: the size above is used instead.</p>
+          <button type="button" class="primary" id="to-show" disabled>Show</button>
         </div>
-      </fieldset>
-
-      <div class="actions">
-        <button type="button" class="primary" id="setup-apply">Show at real size</button>
-        <button type="button" id="setup-cancel">Cancel</button>
-      </div>
+      </section>
     </div>
   </dialog>
 
@@ -120,10 +151,33 @@
     <div id="panel-details">
       <div id="facts"></div>
       <div id="overview" class="overview"></div>
+      <section class="adjust" id="adjust" aria-labelledby="adjust-h" hidden>
+        <h3 id="adjust-h">Adjust</h3>
+        <div id="adj-res" hidden>
+          <p class="res-line"><span id="res-text"></span> <button type="button" class="link-btn" id="res-edit" aria-expanded="false" aria-controls="res-fields">Not right?</button></p>
+          <div class="other" id="res-fields" hidden>
+            <div class="res-inputs">
+              <label for="res-w">Width</label>
+              <input type="number" id="res-w" inputmode="numeric" step="1" min="100" aria-describedby="res-hint">
+              <span aria-hidden="true">×</span>
+              <label for="res-h">Height</label>
+              <input type="number" id="res-h" inputmode="numeric" step="1" min="100" aria-describedby="res-hint">
+              <span class="unit">pixels</span>
+            </div>
+            <p class="note" id="res-hint">The resolution the display is set to now, for example 1920 × 1080. Leave both empty to use the detected one.</p>
+          </div>
+        </div>
+        <fieldset class="pills" id="adj-ratio" hidden>
+          <legend>Aspect ratio of your screen</legend>
+        </fieldset>
+        <fieldset class="pills" id="adj-to-ratio" hidden>
+          <legend>Aspect ratio of the compared screen</legend>
+        </fieldset>
+      </section>
       <section class="notes" aria-labelledby="notes-h">
         <h3 id="notes-h">How accurate is this?</h3>
-        <p>Browsers cannot read the physical size of a screen, so the size is worked out from the screen you pick. This assumes the browser is on the laptop's built-in screen, in a window at 100 % zoom. On an external monitor or at another zoom level the sizes will be off. Use Fine-tune with a bank card to correct it.</p>
-        <p>If the link does not name your screen, the page guesses it from the screen's resolution and offers it as a suggestion. Display scaling, browser zoom and external monitors change what the browser reports, so check the guess. It runs in your browser; nothing is sent or stored.</p>
+        <p>Browsers cannot read the physical size of a screen, but they do report its resolution. With the size in inches that gives the scale exactly: pixels per inch is the diagonal in pixels divided by the diagonal in inches. The size is the one you typed, the one of the laptop model you picked, or the one you measured with a bank card (Fine-tune), which is the most direct.</p>
+        <p>If the screen's resolution matches a known laptop, the page suggests that model and fills in its size; for monitors and anything else it never guesses a size. Browser zoom and display scaling change what the browser reports, so for a model the page warns when it looks off. Check with a bank card when in doubt. It all runs in your browser; nothing is sent or stored.</p>
         <p>Nothing is stored and nothing leaves your browser. Your choices live in this page's link, so you can share it. Bookmark this page to keep this comparison; nothing else is saved.</p>
       </section>
     </div>

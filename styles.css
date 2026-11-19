@@ -13,6 +13,7 @@
   --gauge-soft: #f3e5ab;
   --on-gauge: #ffffff;       /* text on a gauge-coloured fill */
   --focus: #1b4f8a;
+  --error: #a3261b;          /* 6.9:1 on --paper */
   --dim: #0a1624;            /* the veil behind the outline: dark in both schemes */
   --on-dim: #e8eef5;
   --stage-gold: #d4af37;     /* the logo's gold, 8.7:1 on --dim; the outline and chip use it in both schemes */
@@ -33,6 +34,7 @@
     --gauge-soft: rgb(212 175 55 / 0.18);
     --on-gauge: #0b1a2b;
     --focus: #64ffda;
+    --error: #ff9c8f;
   }
 }
 
@@ -59,10 +61,17 @@ a { color: var(--gauge); }
 
 *[hidden] { display: none !important; }
 
+/* The page is a grid: the view (start, or result with its toolbar) over one slim footer line. On a
+   window at least 560 px tall the body is exactly the window high, so nothing scrolls and the footer
+   stays in view; on shorter windows (phones in landscape) the page scrolls normally. */
 body {
   min-height: 100dvh;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) auto;
+}
+@media (min-width: 768px) and (min-height: 560px) {
+  body { height: 100dvh; }
+  .start { overflow-y: auto; } /* only if the content cannot fit even squeezed: never push the footer out */
 }
 /* The result is dimmed: a navy veil behind the outline, in light and dark alike. */
 body[data-view=result] { background: var(--dim); }
@@ -85,7 +94,7 @@ button:disabled { cursor: not-allowed; }
 .primary { background: var(--gauge); border-color: var(--gauge); color: var(--on-gauge); font-weight: 700; padding: 0.65rem 1.4rem; }
 .primary:hover:not(:disabled) { background: var(--gauge); filter: brightness(1.1); }
 .primary:disabled { background: var(--line); border-color: var(--line); color: var(--muted); }
-select, input[type=number] {
+select, input[type=number], input[type=text] {
   font: inherit;
   color: var(--ink);
   background: var(--paper);
@@ -114,13 +123,12 @@ select { width: 100%; }
 
 /* 1. Start: one question, one button */
 .start {
-  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 1rem;
-  padding: 2rem 1rem;
+  padding: 1.5rem 1rem;
   text-align: center;
 }
 .start .brand { padding: 0.55rem 1rem; background: var(--brand-navy); border-radius: 8px; }
@@ -130,17 +138,24 @@ select { width: 100%; }
 .lede { margin: 0; max-width: 32ch; font-size: 1.2rem; color: var(--muted); }
 .start .primary { font-size: 1.15rem; padding: 0.8rem 1.9rem; }
 .no-js { max-width: 36rem; color: var(--muted); }
+@media (max-height: 760px) {
+  .start { gap: 0.6rem; padding-block: 0.75rem; }
+  .start h1 { margin-top: 0.25rem; }
+}
 
 /* The illustration: a screen, and a smaller gold outline that shrinks inside it */
-.art { width: min(320px, 80vw); height: auto; margin: 0.5rem 0 0.75rem; }
+.art { width: min(320px, 80vw, 30dvh); height: auto; margin: 0.5rem 0 0.75rem; }
 .art-screen { fill: var(--surface); stroke: var(--muted); stroke-width: 3; }
 .art-base { fill: var(--muted); }
 .art-inner { transform-box: fill-box; transform-origin: center; transform: scale(0.875); } /* 14 / 16 */
 .art-inner rect { fill: var(--gauge-soft); stroke: var(--gauge); stroke-width: 3; vector-effect: non-scaling-stroke; }
 .art-label { fill: var(--ink); font: 700 22px/1 var(--font); }
 
-/* 3. Result: toolbar on top, the stage fills the rest of the window, the footer is below the fold */
-.result { height: 100dvh; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+/* 3. Result: toolbar on top, the stage fills the space between it and the footer */
+.result { height: 100dvh; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+@media (min-width: 768px) and (min-height: 560px) {
+  .result { height: auto; }
+}
 .toolbar {
   position: sticky;
   top: 0;
@@ -164,7 +179,6 @@ select { width: 100%; }
 .toolbar button:hover { background: rgb(243 229 171 / 0.14); }
 .pair { display: flex; align-items: center; flex-wrap: wrap; gap: 0.4rem; font-size: 0.9rem; }
 .screen-btn::after { content: " ▾"; content: " ▾" / ""; }
-.icon-btn { min-width: 2.2rem; }
 .tools { display: flex; flex-wrap: wrap; gap: 0.4rem 0.5rem; margin-left: auto; }
 .dot { display: inline-block; width: 0.5rem; height: 0.5rem; margin-left: 0.4rem; border-radius: 50%; background: var(--stage-gold); }
 .switch { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer; }
@@ -300,17 +314,21 @@ select { width: 100%; }
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.15rem 1rem;
-  padding: 0.5rem 1rem;
+  padding: 0.35rem 1rem;
   font-size: 0.8rem;
+  line-height: 1.4;
   color: var(--muted);
   background: var(--surface);
   border-top: 1px solid var(--line);
 }
+@media (min-width: 768px) {
+  .site-footer { flex-wrap: nowrap; white-space: nowrap; }
+}
 .site-footer a { color: var(--muted); }
 
-/* 2. Setup: a native dialog */
+/* 2. Setup: a native dialog with two questions. One heading, one main action and at most one link per step. */
 .dialog {
-  width: min(34rem, calc(100vw - 2rem));
+  width: min(26rem, calc(100vw - 2rem));
   max-height: calc(100dvh - 2rem);
   padding: 0;
   color: var(--ink);
@@ -319,11 +337,66 @@ select { width: 100%; }
   border-radius: 12px;
 }
 .dialog::backdrop, .drawer::backdrop { background: rgb(5 12 20 / 0.6); }
-.dialog-body { padding: 1.25rem 1.5rem; }
-.dialog h2 { margin: 0 0 1rem; font-size: 1.3rem; }
-.field { margin: 0 0 1.2rem; padding: 0; border: 0; min-width: 0; }
-.field > label, legend, .other label { display: block; padding: 0; margin-bottom: 0.35rem; font-weight: 600; }
+.dialog { overscroll-behavior: contain; } /* a long hint scrolls inside the dialog, never the page behind it */
+.dialog-body { padding: 0.5rem 1.5rem 1.5rem; }
+.dialog-top { display: flex; align-items: center; margin: 0 -0.75rem 0.25rem; }
+.dialog-top button { min-height: 2.75rem; padding: 0 0.75rem; border: 0; background: none; }
+.dialog-top .back { font-weight: 600; }
+.dialog-top .close { min-width: 2.75rem; margin-left: auto; font-size: 1.6rem; line-height: 1; }
+.dialog h2 { margin: 0 0 1.1rem; font-size: 1.3rem; }
+.dialog h2:focus { outline: none; }
+.dialog .primary { display: block; width: 100%; margin-top: 1rem; padding: 0.8rem 1.4rem; font-size: 1.1rem; }
+.dialog .link-btn {
+  display: block;
+  min-height: 2.75rem;
+  margin-top: 0.25rem;
+  padding: 0.6rem 0;
+  color: var(--gauge);
+  font-size: 1rem;
+  text-align: left;
+}
+.dialog .link-btn:hover, .drawer .link-btn:hover { background: none; color: var(--ink); }
+.dialog .link-btn:focus-visible, .drawer .link-btn:focus-visible { outline-color: var(--focus); }
+
+/* Step 1: the number is the hero */
+.size-row { display: flex; align-items: center; gap: 0.5rem; }
+.dialog .size-row input { width: calc(5ch + 1.2rem + 2px); min-width: 0; padding: 0.3rem 0.6rem; font-size: 2.25rem; font-weight: 700; font-variant-numeric: tabular-nums; text-align: center; }
+.step-btn { flex: none; width: 2.75rem; min-width: 2.75rem; height: 2.75rem; padding: 0; font-size: 1.6rem; font-weight: 700; line-height: 1; }
+.unit { color: var(--muted); font-size: 1.1rem; }
+.hero { display: flex; align-items: center; gap: 0.6rem; margin: 0 0 0.5rem; font-size: 1.6rem; font-weight: 700; line-height: 1.2; }
+.tick { flex: none; width: 1.6rem; height: 1.6rem; fill: none; stroke: var(--gauge); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.note.error { color: var(--error); font-weight: 600; }
+/* The message under a field keeps its line when empty, so showing or hiding it never moves the dialog. */
+.dialog .note.error, .dialog .note.error:empty, .dialog .note.error[hidden] { display: block !important; min-height: 1.5em; }
+.dialog .note.error[hidden] { visibility: hidden; }
+input[aria-invalid=true] { border-color: var(--error); box-shadow: 0 0 0 1px var(--error); }
+.model-wrap { margin-top: 0.9rem; }
+
+/* Optional hints: a quiet native <details>, closed until asked for */
+.hint { margin-top: 0.4rem; font-size: 0.9rem; color: var(--muted); }
+.hint summary { display: flex; align-items: center; min-height: 2.75rem; cursor: pointer; }
+.hint p { margin: 0 0 0.6rem; line-height: 1.45; }
+.hint strong { color: var(--ink); }
+
+/* Step 2: four big buttons, each outline drawn to the same scale */
+.size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.size-btn { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.35rem; min-height: 5rem; padding: 0.6rem 0.5rem; font-size: 1.15rem; font-weight: 700; }
+.size-btn svg { display: block; width: 100%; max-width: 4.5rem; height: auto; }
+.size-btn rect { fill: var(--gauge-soft); stroke: var(--gauge); stroke-width: 2; }
+.size-btn[aria-current=true] { border-color: var(--gauge); box-shadow: inset 0 0 0 1px var(--gauge); }
+.to-other { margin-top: 0.4rem; }
+.dialog .to-other .size-row input { font-size: 1.4rem; }
+.to-other select { margin-top: 0.8rem; }
+/* The two alternatives: the one not used is dimmed, not disabled, so it stays reachable. */
+.to-other .unused { opacity: 0.6; }
+.to-other #to-show { display: block; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (prefers-reduced-motion: no-preference) {
+  .to-other .size-row, .to-other select { transition: opacity 0.15s; }
+}
+
+/* Details: chips and the resolution line */
 .other { margin-top: 0.6rem; }
+legend, .other label { display: block; padding: 0; margin-bottom: 0.35rem; font-weight: 600; }
 .pills { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0; padding: 0; border: 0; min-width: 0; }
 .pills legend { flex-basis: 100%; }
 .pill { position: relative; display: inline-block; }
@@ -331,8 +404,14 @@ select { width: 100%; }
 .pill span { display: inline-block; padding: 0.5rem 1rem; border: 1px solid var(--muted); border-radius: 999px; background: var(--paper); }
 .pill input:checked + span { background: var(--gauge); border-color: var(--gauge); color: var(--on-gauge); font-weight: 700; }
 .pill input:focus-visible + span { outline: 3px solid var(--focus); outline-offset: 2px; }
-#to-ratio, .to-field .note { margin-top: 0.6rem; }
-.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.6rem; margin-top: 1.4rem; }
+.res-line { margin: 0.9rem 0 0; font-size: 0.9rem; color: var(--muted); }
+.res-inputs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; }
+.res-inputs label { margin: 0; }
+.res-inputs input { width: 6.5rem; }
+.adjust { margin-top: 1.1rem; }
+.adjust h3 { margin-top: 0; }
+.adjust .pills { margin-top: 0.9rem; }
+.drawer .link-btn { color: var(--ink); }
 
 /* Drawer: Details or Fine-tune, from the right edge */
 .drawer {
@@ -413,6 +492,7 @@ select { width: 100%; }
   border: 2px solid var(--gauge);
   background: var(--gauge-soft);
 }
+.cal-size { margin: 0.25rem 0 0.9rem; font-size: 1.5rem; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; min-height: 1.8rem; }
 .cal-row { display: flex; align-items: flex-end; gap: 0.75rem; margin-bottom: 0.9rem; }
 .cal-row .cal-slider { flex: 1; min-width: 0; margin-bottom: 0; }
 .cal-slider { display: block; margin-bottom: 0.9rem; font-weight: 600; font-size: 0.9rem; }
@@ -424,6 +504,7 @@ select { width: 100%; }
 @media (prefers-reduced-motion: no-preference) {
   .art-inner { animation: shrink 4.5s ease-in-out infinite alternate; }
   .fade-in { animation: fade-in 0.3s both; }
+  #step-you, #step-to { animation: fade-in 0.15s both; }
   .drawer[open] { animation: slide-in 0.22s ease-out; }
   button, .pill span, .switch input { transition: background-color 0.12s, border-color 0.12s; }
 

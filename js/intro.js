@@ -1,6 +1,7 @@
 // Pure helpers for the setup dialog and the chip: which smaller screen to suggest, and what to call it.
 
 import { SCREENS } from './screens.js';
+import { SIZE_PILLS } from './compare-options.js';
 
 // "Next size down" for the setup dialog. Screens with no smaller preset (13" and
 // under, custom sizes, unknown) fall back to the 14" MacBook Pro.
@@ -22,6 +23,17 @@ const FALLBACK = 'mbp14';
 export function smallerThan(fromId) {
   const id = SMALLER[fromId];
   return SCREENS.some((s) => s.id === id) ? id : FALLBACK;
+}
+
+/**
+ * Preset id of a smaller laptop to compare with a typed size: the biggest generic laptop pill that
+ * is clearly smaller (at most 92 % of the diagonal). Monitors and anything with no such pill get the
+ * common 14" MacBook Pro.
+ */
+export function smallerThanSize(sizeIn) {
+  if (!(sizeIn <= 18)) return FALLBACK;
+  const pill = SIZE_PILLS.filter((p) => SCREENS.find((s) => s.id === p.preset).diagonalIn <= sizeIn * 0.92).at(-1);
+  return pill ? pill.preset : FALLBACK;
 }
 
 /** Size in inches as people say it: from the short name, else the custom diagonal. */
