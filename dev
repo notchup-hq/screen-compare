@@ -1,0 +1,226 @@
+#!/usr/bin/env bash
+# Local helper: ./dev <command>. Linux, macOS and WSL. Run ./dev help for usage.
+set -euo pipefail
+
+# Resolve the repo from this script's path, not from the working directory.
+if ! ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd) || ! cd "$ROOT_DIR"; then
+  echo "❓ Cannot find the repository from $PWD." >&2
+  echo "   👉 cd back into the repository and try again." >&2
+  exit 1
+fi
+
+PLAYWRIGHT_VERSION=1.49.1   # for ./dev screenshot, fetched on demand by npx
+DEFAULT_PORT=8080
+TEST_PORT=8124              # background server for check and screenshot
+
+usage() {
+  cat <<'EOF'
+Usage: ./dev <command> [options]
+
+Commands:
+  help                      Show this help (also: ./dev with no command, -h, --help).
+  serve [--port N] [--open] Serve the repo root at http://127.0.0.1:N/ (default 8080, or $PORT).
+                            Uses python3 -m http.server, else npx --yes serve (which listens
+                            on all interfaces, so the page is visible on your network).
+                            --open opens the browser (open, xdg-open, or wslview / cmd.exe on WSL).
+  test [--watch]            Run node --test tests/*.test.js (--watch needs Node 18.11+).
+  screenshot                Regenerate docs/screenshot.png with Playwright (via npx, on demand).
+  check                     Run the tests, then fetch index.html, the CSS and every JS module
+                            over HTTP and check they load (JS must be served as JavaScript).
+EOF
+}
+
+die_usage() {
+  echo "$1" >&2
+  echo >&2
+  usage >&2
+  exit 1
+}
+
+# need <tool> <what it is for> <how to get it>
+need() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    echo "❓ $1 not found ($2)." >&2
+    echo "   👉 $3" >&2
+    exit 1
+  fi
+}
+
+valid_port() {
+  case "$1" in
+    ''|*[!0-9]*) return 1 ;;
+  esac
+  [ "$1" -ge 1 ] && [ "$1" -le 65535 ]
+}
+
+open_url() {
+  local url=$1
+  case "$(uname -s)" in
+    Darwin) open "$url" ;;
+    *)
+      if grep -qi microsoft /proc/version 2>/dev/null; then
+        if command -v wslview >/dev/null 2>&1; then
+          wslview "$url"
+        elif command -v cmd.exe >/dev/null 2>&1; then
+          (cd /mnt/c && cmd.exe /c start "" "$url") >/dev/null 2>&1
+        else
+          return 1
+        fi
+      elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$url" >/dev/null 2>&1
+      else
+        return 1
+      fi
+      ;;
+  esac
+}
+
+# wait_for_url <url> [pid]: up to ~30 s; fails fast if the server process died.
+wait_for_url() {
+  local url=$1 pid=${2:-} i=0
+  while [ "$i" -lt 150 ]; do
+    if [ -n "$pid" ] && ! kill -0 "$pid" 2>/dev/null; then
+      echo "❌ The server stopped. Is port ${url##*:} already in use?" >&2
+      return 1
+    fi
+    if curl -fsS -o /dev/null "$url" 2>/dev/null; then
+      return 0
+    fi
+    sleep 0.2
+    i=$((i + 1))
+  done
+  echo "❌ Timed out waiting for $url" >&2
+  return 1
+}
+
+SERVER_PID=""
+cleanup() {
+  if [ -n "$SERVER_PID" ]; then
+    kill "$SERVER_PID" 2>/dev/null || true
+  fi
+}
+
+# start_bg_server <port>: python only, so the PID is the real server (not an npx wrapper).
+start_bg_server() {
+  need python3 "needed to serve the page" "Install Python 3."
+  need curl "needed to wait for the server" "Install curl."
+  python3 -m http.server "$1" --bind 127.0.0.1 >/dev/null 2>&1 &
+  SERVER_PID=$!
+  trap cleanup EXIT INT TERM
+  wait_for_url "http://127.0.0.1:$1/" "$SERVER_PID"
+}
+
+cmd_serve() {
+  local port=${PORT:-$DEFAULT_PORT} open=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --port)
+        [ $# -ge 2 ] || die_usage "--port needs a number."
+        port=$2
+        shift 2
+        ;;
+      --open) open=1; shift ;;
+      *) die_usage "Unknown option for serve: $1" ;;
+    esac
+  done
+  valid_port "$port" || die_usage "Invalid port: $port (use 1-65535)."
+
+  local url="http://127.0.0.1:$port/"
+  echo "🌐 Serving $ROOT_DIR at $url (Ctrl-C to stop)"
+  if [ "$open" -eq 1 ]; then
+    if command -v curl >/dev/null 2>&1; then
+      (wait_for_url "$url" && { open_url "$url" || echo "   Could not open a browser; open $url yourself."; }) &
+    else
+      echo "   curl not found, so not waiting for the server; open $url yourself."
+    fi
+  fi
+
+  if command -v python3 >/dev/null 2>&1; then
+    exec python3 -m http.server "$port" --bind 127.0.0.1
+  elif command -v npx >/dev/null 2>&1; then
+    exec npx --yes serve -l "$port" .
+  fi
+  echo "❓ Neither python3 nor npx found." >&2
+  echo "   👉 Install Python 3 (or Node.js, which includes npx)." >&2
+  exit 1
+}
+
+cmd_test() {
+  local watch=0
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --watch) watch=1; shift ;;
+      *) die_usage "Unknown option for test: $1" ;;
+    esac
+  done
+  need node "needed to run the tests" "Install Node.js (18.11 or newer)."
+  set -- tests/*.test.js
+  [ -e "$1" ] || { echo "❓ No tests found in tests/." >&2; exit 1; }
+  if [ "$watch" -eq 1 ]; then
+    node --test --watch "$@"
+  else
+    node --test "$@"
+  fi
+}
+
+cmd_screenshot() {
+  [ $# -eq 0 ] || die_usage "Unknown option for screenshot: $1"
+  need npx "needed to run Playwright on demand" "Install Node.js, which includes npx."
+  start_bg_server "$TEST_PORT"
+  mkdir -p docs
+  npx --yes "playwright@$PLAYWRIGHT_VERSION" install chromium
+  # 1728x1117 is the default scaled size of a 16" MacBook Pro screen.
+  npx --yes "playwright@$PLAYWRIGHT_VERSION" screenshot \
+    --viewport-size=1728,1117 --wait-for-timeout=500 \
+    "http://127.0.0.1:$TEST_PORT/?from=mbp16&to=mbp14" docs/screenshot.png
+  echo "✅ Wrote docs/screenshot.png"
+}
+
+cmd_check() {
+  [ $# -eq 0 ] || die_usage "Unknown option for check: $1"
+  cmd_test
+  start_bg_server "$TEST_PORT"
+
+  # index.html itself, what it links, and every JS module.
+  local paths
+  paths=$(
+    {
+      echo "index.html"
+      grep -oE '(href|src)="[^"]+"' index.html | sed -E 's/^[a-z]+="//; s/"$//' | grep -v -e '://' -e '^#' || true
+      for f in js/*.js; do [ -e "$f" ] && echo "$f"; done
+    } | sort -u
+  )
+
+  local failed=0 p out code type
+  for p in $paths; do
+    out=$(curl -s -o /dev/null -w '%{http_code} %{content_type}' "http://127.0.0.1:$TEST_PORT/$p") || out="000 "
+    code=${out%% *}
+    type=${out#* }
+    if [ "$code" != "200" ]; then
+      echo "❌ $p: HTTP $code"
+      failed=1
+    elif [ "${p##*.}" = "js" ] && ! printf '%s' "$type" | grep -qi javascript; then
+      echo "❌ $p: served as '$type', browsers need JavaScript for ES modules"
+      failed=1
+    else
+      echo "✅ $p"
+    fi
+  done
+  [ "$failed" -eq 0 ] || exit 1
+  echo "✅ All checks passed"
+}
+
+cmd=help
+if [ $# -gt 0 ]; then
+  cmd=$1
+  shift
+fi
+
+case "$cmd" in
+  help|-h|--help) usage ;;
+  serve) cmd_serve "$@" ;;
+  test) cmd_test "$@" ;;
+  screenshot) cmd_screenshot "$@" ;;
+  check) cmd_check "$@" ;;
+  *) die_usage "Unknown command: $cmd" ;;
+esac
