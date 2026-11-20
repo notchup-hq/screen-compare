@@ -11,6 +11,7 @@ All notable changes to this project are listed here, newest first. The format fo
 ### Changed
 
 - Full screen is one tap away on a phone: an icon in the toolbar, with Exit full screen in the top corner.
+- The page preloads its scripts, so it starts one network round trip sooner.
 - `AGENTS.md` is a short set of rules; the detailed behaviour of each view lives in `docs/how-it-works.md`, now up to date with phones, tablets, card and ruler.
 
 ## 0.2.0 – 2026-11-19
