@@ -231,6 +231,9 @@ export function renderOverview(host, from, to) {
 
   const svg = document.createElementNS(SVG_NS, 'svg');
   svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  // Its own size, not the card's width: a tall pair of phones would otherwise grow past the window.
+  svg.setAttribute('width', Math.round(W));
+  svg.setAttribute('height', Math.round(H));
   svg.setAttribute('role', 'img');
   svg.setAttribute('aria-label', `Both screens to scale, centred: your screen ${formatCm(from.widthMm)} wide and ${to.name} ${formatCm(to.widthMm)} wide.`);
 

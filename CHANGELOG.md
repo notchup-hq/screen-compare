@@ -4,8 +4,13 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ## Unreleased
 
+### Fixed
+
+- On a phone, the "Not enough room" and "Bigger than your screen" cards fit the window: the scaled comparison no longer grows taller than the screen, and the page no longer zooms out sideways.
+
 ### Changed
 
+- Full screen is one tap away on a phone: an icon in the toolbar, with Exit full screen in the top corner.
 - `AGENTS.md` is a short set of rules; the detailed behaviour of each view lives in `docs/how-it-works.md`, now up to date with phones, tablets, card and ruler.
 
 ## 0.2.0 – 2026-11-19

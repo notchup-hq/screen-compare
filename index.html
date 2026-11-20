@@ -36,6 +36,7 @@
   }
   </script>
   <link rel="stylesheet" href="styles.css">
+  <!-- Every module main.js pulls in, fetched at once instead of one import level at a time (tests/preload.test.js keeps the list whole). -->
   <script type="module" src="js/main.js"></script>
 </head>
 <body data-view="start">
@@ -82,12 +83,13 @@
         <span>vs</span>
         <button type="button" class="screen-btn" id="to-btn" aria-haspopup="dialog"></button>
       </div>
+      <!-- Full screen is one tap away on every screen size; on a small screen it shows only its icon. -->
+      <button type="button" class="fs-btn" id="fullscreen-btn" title="Full screen" hidden><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="fs-label">Full screen</span></button>
       <!-- On a small screen the options sit behind one Options button; from 768 px they show inline. -->
       <button type="button" class="menu-btn" id="menu-btn" aria-expanded="false" aria-controls="options"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span class="menu-label">Options</span></button>
       <div class="options" id="options">
         <label class="switch"><input type="checkbox" role="switch" id="fill"><span>Sample content</span></label>
         <div class="tools">
-          <button type="button" id="fullscreen-btn" hidden>Full screen</button>
           <button type="button" id="drawing-btn" aria-pressed="false">Drawing only</button>
           <button type="button" id="start-over-btn">Start over</button>
           <button type="button" id="tune-btn" aria-haspopup="dialog">Fine-tune<span class="dot" id="tune-dot" hidden></span><span class="visually-hidden" id="tune-state"></span></button>
