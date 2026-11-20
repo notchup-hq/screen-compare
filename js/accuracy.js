@@ -7,6 +7,7 @@
 // exact match never gets one.
 
 import { matchScreens, nativeResolution } from './detect.js';
+import { screenName, t } from './i18n.js';
 
 const RATIO_TOLERANCE = 0.05; // Apple panels are 1.55:1, a custom "16:10" is 1.6:1
 // Outer/inner window width is 1 at 100 % zoom; scrollbars and borders add a little.
@@ -45,12 +46,12 @@ export function accuracy({ your, screen, win, detected = false }) {
 /** The label under the area chip. */
 export function accuracyText(kind, your) {
   switch (kind) {
-    case 'card': return 'Real size · measured with a card ✓';
-    case 'size': return `Real size · from your ${your.diagonalIn}" screen size`;
-    case 'model': return `Real size · based on ${your.short ?? your.name}`;
-    case 'detected': return `Real size · based on ${your.short ?? your.name} (detected)`;
-    case 'zoom': return "Approximate: browser zoom isn't 100 %";
-    case 'mismatch': return "Approximate: this doesn't look like the screen you picked";
+    case 'card': return t('Real size · measured with a card ✓');
+    case 'size': return t('Real size · from your {size}" screen size', { size: your.diagonalIn });
+    case 'model': return t('Real size · based on {name}', { name: screenName(your) });
+    case 'detected': return t('Real size · based on {name} (detected)', { name: screenName(your) });
+    case 'zoom': return t("Approximate: browser zoom isn't 100 %");
+    case 'mismatch': return t("Approximate: this doesn't look like the screen you picked");
     default: return '';
   }
 }

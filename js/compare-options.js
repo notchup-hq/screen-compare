@@ -6,6 +6,7 @@ import { SCREENS, RATIOS } from './screens.js';
 import { resolveScreen, customSpec } from './state.js';
 import { round1, validSize } from './scale.js';
 import { parseSize } from './size-field.js';
+import { screenName, t } from './i18n.js';
 
 /** Order of the headings in the screen lists. */
 export const GROUPS = ['Apple', 'Framework', 'Microsoft', 'Generic laptops', 'Monitors', 'Tablets', 'iPhone', 'Galaxy', 'Pixel', 'Phones'];
@@ -129,15 +130,15 @@ export function otherChoice({ active = null, sizeText = '', modelId = '', kind, 
   else if (hasModel) use = 'model';
   if (use === 'model') {
     const s = resolveScreen(modelId);
-    return s ? { use, spec: modelId, label: `Show ${s.short ?? s.name}` } : { use: null, spec: null, label: 'Show' };
+    return s ? { use, spec: modelId, label: t('Show {name}', { name: screenName(s) }) } : { use: null, spec: null, label: t('Show') };
   }
   if (use === 'size') {
     const n = parseSize(sizeText);
-    if (!validSize(n)) return { use, spec: null, label: 'Show' };
+    if (!validSize(n)) return { use, spec: null, label: t('Show') };
     const spec = keep && n === keep.size ? keep.spec : otherSizeSpec(n, kind);
-    return { use, spec, label: `Show ${round1(n)}"` };
+    return { use, spec, label: t('Show {size}"', { size: round1(n) }) };
   }
-  return { use: null, spec: null, label: 'Show' };
+  return { use: null, spec: null, label: t('Show') };
 }
 
 /** Presets as [{ group, screens }], in heading order. */

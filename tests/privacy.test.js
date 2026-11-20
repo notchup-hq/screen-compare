@@ -1,8 +1,8 @@
 // Privacy guard: the page promises no cookies, no tracking, no requests to other origins and no
-// forms, and browser storage only for screens the visitor asked to remember. localStorage is allowed
-// in exactly one file (js/memory.js, one key); everything else about storage stays banned. This scans
-// the shipped source for anything that would break that promise. It runs with `./dev test` and
-// `./dev check`.
+// forms, and browser storage only for screens the visitor asked to remember and the theme and
+// language they picked. localStorage is allowed in exactly one file (js/memory.js, two keys);
+// everything else about storage stays banned. This scans the shipped source
+// for anything that would break that promise. It runs with `./dev test` and `./dev check`.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -12,7 +12,7 @@ import { basename, join } from 'node:path';
 const root = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
 
 const MEMORY_FILE = 'js/memory.js';
-const STORAGE_KEY = 'screen-compare:v1';
+const STORAGE_KEYS = ['screen-compare:v1', 'screen-compare:prefs'];
 
 const FORBIDDEN = [
   /sessionStorage/i,
@@ -90,13 +90,14 @@ test('shipped source has no storage, tracking, forms or third-party URLs', () =>
   assert.deepEqual(problems, []);
 });
 
-test('storage stays inside js/memory.js: one use of localStorage and one key', () => {
+test('storage stays inside js/memory.js: one use of localStorage and two keys', () => {
   const text = readFileSync(join(root, MEMORY_FILE), 'utf8');
   assert.equal(text.match(/localStorage/g)?.length, 1, 'localStorage appears once, as the default storage');
-  assert.equal(text.match(/screen-compare:v1/g)?.length, 1, 'the key is named once, as the constant');
+  assert.deepEqual(text.match(/'screen-compare:[^']*'/g), STORAGE_KEYS.map((k) => `'${k}'`), 'each key is named once, as a constant');
   for (const f of shippedFiles()) {
     if (f === MEMORY_FILE || f.endsWith('.svg')) continue;
-    assert.ok(!readFileSync(join(root, f), 'utf8').includes(STORAGE_KEY), `${f} must not name the storage key`);
+    const src = readFileSync(join(root, f), 'utf8');
+    for (const key of STORAGE_KEYS) assert.ok(!src.includes(key), `${f} must not name the storage key ${key}`);
   }
 });
 

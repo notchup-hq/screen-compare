@@ -23,8 +23,10 @@
   color-scheme: light dark;
 }
 
+/* Dark scheme: the system's choice unless the visitor picked light (data-theme on <html>, set by
+   js/settings.js), or picked dark on a light system. The two blocks hold the same values. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --paper: #0b1a2b;
     --surface: #12294a;
     --ink: #e8eef5;
@@ -37,6 +39,20 @@
     --error: #ff9c8f;
   }
 }
+:root[data-theme="dark"] {
+  --paper: #0b1a2b;
+  --surface: #12294a;
+  --ink: #e8eef5;
+  --muted: #9fb3c8;
+  --line: #1d3a5c;
+  --gauge: #d4af37;
+  --gauge-soft: rgb(212 175 55 / 0.18);
+  --on-gauge: #0b1a2b;
+  --focus: #64ffda;
+  --error: #ff9c8f;
+  color-scheme: dark;
+}
+:root[data-theme="light"] { color-scheme: light; }
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -369,8 +385,10 @@ select { width: 100%; }
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 0.15rem 1rem;
-  padding: 0.35rem 1rem;
+  align-items: center;
+  gap: 0 1rem;
+  padding: 0 1rem;
+  min-height: 44px; /* the settings buttons are 44 px tap targets */
   font-size: 0.8rem;
   line-height: 1.4;
   color: var(--muted);
@@ -381,14 +399,39 @@ select { width: 100%; }
 @media (min-width: 768px) {
   .site-footer > * { white-space: nowrap; }
 }
-/* Narrow windows: one short line (Made by Notchup, licence, source and version), so the start view fits
-   a phone without scrolling. The slogan and the privacy note step aside; "What is this?" and the setup
-   hint say the same about privacy. */
+/* Narrow windows: one short line (Made by Notchup, the settings, source and version), so the start view
+   fits a phone without scrolling. The slogan, licence and privacy note step aside ("What is this?" and the
+   setup hint say the same about privacy; the licence is in the source), and under 360 px the version too. */
 @media (max-width: 767.98px) {
-  .site-footer { padding-block: 0.5rem; gap: 0.15rem 0.9rem; }
-  .site-footer .slogan, .site-footer .privacy { display: none; }
+  .site-footer { gap: 0 0.75rem; padding-inline: 0.75rem; }
+  .site-footer .slogan, .site-footer .privacy, .site-footer .licence { display: none; }
+}
+@media (max-width: 359.98px) {
+  .site-footer #version { display: none; }
 }
 .site-footer a { color: var(--muted); }
+/* Settings: one icon button for light or dark, and EN | FI with the current language marked. */
+.site-footer .settings { display: inline-flex; align-items: center; }
+.site-footer .lang { display: inline-flex; }
+.set-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.4rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.set-btn:hover { color: var(--ink); }
+.set-btn:focus-visible { outline: 2px solid var(--focus); outline-offset: -4px; }
+.set-btn[aria-pressed="true"] { color: var(--ink); font-weight: 700; text-decoration: underline 2px var(--gauge); text-underline-offset: 4px; }
+#theme-btn[data-mode="light"] .i-sun, #theme-btn[data-mode="dark"] .i-moon { display: none; }
 /* The source link and the version stay together as one item. */
 .site-footer .meta { display: inline-flex; align-items: center; gap: 0.75rem; }
 .site-footer .gh { display: inline-flex; align-items: center; }

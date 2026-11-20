@@ -5,7 +5,8 @@ A static page that draws a laptop, phone or monitor at its real physical size on
 ## Rules
 
 - **Stack:** plain HTML, one stylesheet (`styles.css`), small ES modules in `js/`. No build step, no npm dependencies, no framework, no third-party scripts, fonts or trackers.
-- **Privacy:** state lives in the URL. No cookies, no requests. `localStorage` only for screens the user chose to remember, and only in `js/memory.js`; the page works the same when storage is blocked. `tests/privacy.test.js` enforces this.
+- **Privacy:** state lives in the URL. No cookies, no requests. `localStorage` only for screens the user chose to remember and the theme and language they picked, and only in `js/memory.js`; the page works the same when storage is blocked. `tests/privacy.test.js` enforces this.
+- **Languages:** English and Finnish, English the default. All text is English in the code and markup, and `js/fi.js` holds its Finnish (keyed by the English). Change both together; `tests/i18n.test.js` fails on a missing or unused translation. Plain, natural Finnish.
 - **Accuracy:** presets live only in `js/screens.js`, with real panel numbers (not marketing sizes) and a maker's spec page as `source` for every model. Only laptop models are ever detected from the resolution; never guess a monitor's, tablet's or phone's size. The scale maths stays one pure, tested function in `js/scale.js`.
 - **UI:** simple enough for anyone. Standard controls only (native `<dialog>`, `<details>`, buttons, a range input), one question per step, at most one primary button, plain words (no "resolution" or "diagonal" outside Details), and the UI says "card", never "bank card". Mobile first: works from 320 px, 44 px touch targets, and the start view fits a phone without scrolling.
 - **Accessible:** semantic HTML, labels, keyboard use, WCAG AA contrast in light and dark, all motion inside `prefers-reduced-motion: no-preference`.

@@ -38,8 +38,3 @@ export function overflowPerSide(target, current) {
 export function fitsBox(w, h, boxW, boxH, margin = 0) {
   return w + margin * 2 <= boxW && h + margin * 2 <= boxH;
 }
-
-/** Format millimetres as "x.x cm". */
-export function formatCm(mm) {
-  return `${(mm / 10).toFixed(1)} cm`;
-}

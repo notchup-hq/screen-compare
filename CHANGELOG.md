@@ -4,6 +4,12 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ## Unreleased
 
+### Added
+
+- Dark and light mode: a moon or sun button in the footer. The page still follows the system until you pick, and switching back to the system's choice follows it again.
+- Finnish: EN | FI in the footer switches every text, with Finnish number formats (13,3"). English stays the default.
+- Both choices are remembered in this browser, the same way as remembered screens (no cookies).
+
 ### Fixed
 
 - On a phone, the "Not enough room" and "Bigger than your screen" cards fit the window: the scaled comparison no longer grows taller than the screen, and the page no longer zooms out sideways.

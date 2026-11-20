@@ -13,10 +13,11 @@ import {
 import { SIZE_MAX_IN, SIZE_MIN_IN, round1, usableResolution, validSize } from './scale.js';
 import { deviceKind, parseSize, sizeStepper, typicalSize } from './size-field.js';
 import { rememberedLine } from './memory.js';
+import { num, screenName, t } from './i18n.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const $ = (root, sel) => root.querySelector(sel);
-const RANGE_TEXT = `Use a size from ${SIZE_MIN_IN} to ${SIZE_MAX_IN} inches.`;
+const rangeText = () => t('Use a size from {min} to {max} inches.', { min: SIZE_MIN_IN, max: SIZE_MAX_IN });
 
 function optionList(select, groups, placeholder) {
   select.replaceChildren();
@@ -25,8 +26,8 @@ function optionList(select, groups, placeholder) {
   select.append(o);
   for (const { group, screens } of groups) {
     const og = document.createElement('optgroup');
-    og.label = group;
-    for (const s of screens) og.append(new Option(s.name, s.id));
+    og.label = t(group);
+    for (const s of screens) og.append(new Option(num(t(s.name)), s.id));
     select.append(og);
   }
 }
@@ -54,10 +55,10 @@ function sizeButton({ preset, label, name }, screen, scale, boxHeight) {
 
   const text = document.createElement('span');
   text.setAttribute('aria-hidden', 'true');
-  text.textContent = label;
+  text.textContent = num(t(label));
   const spoken = document.createElement('span');
   spoken.className = 'visually-hidden';
-  spoken.textContent = name;
+  spoken.textContent = num(t(name));
   b.append(svg, text, spoken);
   return b;
 }
@@ -106,7 +107,6 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
   // A phone is offered phone models for its own screen; everything else laptop models.
   const onPhone = deviceKind(device) === 'phone';
   const allBox = $(dialog, '#all-sizes');
-  sizeInput.placeholder = String(typical);
   const syncSizeAria = sizeStepper(sizeInput, $(dialog, '#size-minus'), $(dialog, '#size-plus'), { start: typical });
   const syncOtherAria = sizeStepper(otherSize, $(dialog, '#other-minus'), $(dialog, '#other-plus'), { start: 22 });
   const otherError = $(dialog, '#other-error');
@@ -119,11 +119,18 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
   const nativeUsable = native && usableResolution(native[0], native[1]) ? native : null;
   const models = ownModels(onPhone ? 'phone' : 'laptop');
   const modelIds = new Set(models.flatMap((g) => g.screens.map((s) => s.id)));
-  optionList(modelSelect, models, onPhone ? 'Choose your phone' : 'Choose your laptop');
-  if (onPhone) {
-    modelBtn.textContent = 'Pick your phone model';
-    $(dialog, 'label[for=model-select]').textContent = 'Your phone model';
+  // The texts made here once; relabel() makes them again in a new language.
+  function relabel() {
+    sizeInput.placeholder = num(typical);
+    const chosen = modelSelect.value;
+    optionList(modelSelect, models, onPhone ? t('Choose your phone') : t('Choose your laptop'));
+    modelSelect.value = chosen;
+    if (onPhone) {
+      modelBtn.textContent = t('Pick your phone model');
+      $(dialog, 'label[for=model-select]').textContent = t('Your phone model');
+    }
   }
+  relabel();
 
   // What the visitor has told us about their own screen. Only one is used, strongest first: a card
   // measurement (a draft until applied), a preset (a laptop model, or a generic one from the link that
@@ -175,15 +182,17 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
     youAsk.hidden = known;
     knownRemembered.hidden = !isRemembered;
     knownForget.hidden = !isRemembered;
-    knownChange.textContent = isRemembered ? 'Measure again' : 'No, change it';
+    knownChange.textContent = isRemembered ? t('Measure again') : t('No, change it');
     if (known) {
       const d = you ? diagonalOf(you) : null;
-      const inches = d ? `${round1(d)}"` : '';
+      const inches = d ? `${num(round1(d))}"` : '';
       if (isRemembered) {
-        knownText.textContent = `Your screen: ${preset && modelIds.has(preset) ? resolveScreen(preset).short : inches}`;
+        knownText.textContent = t('Your screen: {name}', { name: preset && modelIds.has(preset) ? screenName(resolveScreen(preset)) : inches });
         knownRemembered.textContent = rememberedLine(remembered.saved);
+      } else if (cal) {
+        knownText.textContent = inches ? t('Measured with a card: about {size}', { size: inches }) : t('Measured with a card');
       } else {
-        knownText.textContent = cal ? `Measured with a card${inches ? `: about ${inches}` : ''}` : resolveScreen(preset).short;
+        knownText.textContent = screenName(resolveScreen(preset));
       }
     }
     // "Remember this screen" sits right under the main button; a remembered screen has its own links instead.
@@ -222,13 +231,13 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
     showError('');
     if (!cal) {
       if (your.size) {
-        sizeInput.value = your.size;
+        sizeInput.value = num(your.size);
       } else if (your.from) {
         const s = resolveScreen(your.from);
         if (s) {
           preset = s.id;
           if (modelIds.has(s.id)) modelSelect.value = s.id;
-          else sizeInput.value = s.diagonalIn; // a generic size: ask, prefilled
+          else sizeInput.value = num(s.diagonalIn); // a generic size: ask, prefilled
         }
       }
     }
@@ -252,7 +261,7 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
   // grey example reads as "that size is not allowed") and says what is missing instead.
   sizeNext.addEventListener('click', () => {
     if (!readYour()) {
-      showError(sizeInput.value.trim() === '' ? `Type your screen's size, for example ${typical}.` : RANGE_TEXT);
+      showError(sizeInput.value.trim() === '' ? t("Type your screen's size, for example {size}.", { size: typical }) : rangeText());
       sizeInput.focus();
       return;
     }
@@ -265,7 +274,7 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
       const d = diagonalOf(readYour() ?? {});
       remembered = null;
       forget();
-      sizeInput.value = d ? String(round1(d)) : '';
+      sizeInput.value = d ? num(round1(d)) : '';
       changing = false;
     } else {
       forget();
@@ -346,7 +355,7 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
     const kinds = kindsToShow(kind, allBox.checked);
     // The model list follows the buttons: your kind, or everything with "Show all sizes".
     const chosen = toSelect.value;
-    optionList(toSelect, screensOfKinds(kinds), 'Choose a model…');
+    optionList(toSelect, screensOfKinds(kinds), t('Choose a model…'));
     if ([...toSelect.options].some((o) => o.value === chosen)) toSelect.value = chosen;
     sizes.replaceChildren(...kinds.map((k) => {
       if (kinds.length === 1) return sizeGrid(k);
@@ -357,7 +366,7 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
       const cap = document.createElement('p');
       cap.className = 'size-cap';
       cap.id = `sizes-${k}`;
-      cap.textContent = KINDS.find((x) => x.kind === k).label;
+      cap.textContent = t(KINDS.find((x) => x.kind === k).label);
       group.append(cap, sizeGrid(k));
       return group;
     }));
@@ -387,7 +396,7 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
     syncOtherAria();
     const bad = otherSize.value !== '' && !validSize(parseSize(otherSize.value));
     otherError.hidden = !bad;
-    otherError.textContent = bad ? RANGE_TEXT : '';
+    otherError.textContent = bad ? rangeText() : '';
     const c = otherNow();
     dim(sizeRow, c.use === 'model', 'other-unused-size', 'other-error');
     dim(toSelect, c.use === 'size', 'other-unused-model');
@@ -410,7 +419,7 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
     setOther(Boolean(target && !onButton));
     if (target && !onButton) {
       if (target.custom) {
-        otherSize.value = target.diagonalIn;
+        otherSize.value = num(target.diagonalIn);
         keepCustom = { size: parseSize(otherSize.value), spec: currentTo };
       }
       else toSelect.value = currentTo;
@@ -458,6 +467,7 @@ export function createSetup(dialog, { onApply, onMeasure, onForget, onRestore, n
 
   return {
     isOpen: () => dialog.open,
+    relabel,
     readYour,
     refocus,
     /** The card drawer moved the slider (or reset it): the new measurement is a draft until applied. */

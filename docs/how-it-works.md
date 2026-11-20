@@ -19,9 +19,17 @@ Each question has a closed hint ("Why do you ask?", "How accurate is this?").
 
 Motion is CSS only and is skipped with `prefers-reduced-motion: reduce`.
 
+**Footer.** On every view except full screen and Drawing only: Made by Notchup, the licence and privacy line (from 768 px), a moon or sun button for dark or light, **EN | FI** with the current language underlined, the source link and the version (from 360 px). The buttons are 44 px tap targets, so the footer line is 44 px high.
+
+## Theme and language
+
+The page follows the system's light or dark setting. The moon or sun button switches to the other one; switching back to what the system uses forgets the choice, so the page follows the system again. English is the default; FI switches every text at once, the setup, drawers and stage included, and writes numbers the Finnish way (13,3", 1,9 cm). Both choices are remembered in this browser (see below) and apply on the next visit.
+
+How it is built: all text in `index.html` and `js/` is English, and that English is the key into one Finnish dictionary, `js/fi.js`. Scripts call `t('Show {size}"', { size })` from `js/i18n.js`; the static markup is translated by walking its text nodes and text attributes (`aria-label`, `title`, `placeholder`, `alt`). Changing an English text means changing its key in `js/fi.js` too: `tests/i18n.test.js` fails on any text without a Finnish translation and on any translation nothing uses. The theme is a `data-theme` attribute on `<html>` that overrides the system's colours in `styles.css`. Search engines and link previews stay English.
+
 ## Privacy and remembered screens
 
-Your choices are kept in the page's link, so you can share a comparison. No cookies, no tracking. Your screens are remembered in this browser only if you ask, and never leave it: tick "Remember this screen on this browser" and the page keeps up to five screens (a name, the size and the screen's width, height and pixel ratio) in `localStorage`, so the right one is picked on the next visit, which also works with several monitors. Rename or delete them in Details, or "Forget all". A shared link always wins over a remembered screen. Only `js/memory.js` touches storage; `tests/privacy.test.js` scans the source for cookies, other storage APIs, `fetch(`, forms and external URLs (only the footer links, spec-page references and XML namespaces are allowed), and `./dev check` runs it.
+Your choices are kept in the page's link, so you can share a comparison. No cookies, no tracking. A dark or light theme or the Finnish language you pick is remembered in this browser under its own `localStorage` key; picking the default again removes it. Your screens are remembered in this browser only if you ask, and never leave it: tick "Remember this screen on this browser" and the page keeps up to five screens (a name, the size and the screen's width, height and pixel ratio) in `localStorage`, so the right one is picked on the next visit, which also works with several monitors. Rename or delete them in Details, or "Forget all". A shared link always wins over a remembered screen. Only `js/memory.js` touches storage (two keys, one for screens and one for the theme and language); `tests/privacy.test.js` scans the source for cookies, other storage APIs, `fetch(`, forms and external URLs (only the footer links, spec-page references and XML namespaces are allowed), and `./dev check` runs it.
 
 ## How calibration works
 
@@ -112,7 +120,7 @@ Presets live in one file: `js/screens.js`. Add an entry to `SCREENS`:
 }
 ```
 
-Check every number against the maker's own spec page and put that URL in `source`. Use the real panel numbers, not the marketing ones. Generic laptop sizes and monitors have no single maker and leave `source` out; add monitors only as generic sizes.
+Check every number against the maker's own spec page and put that URL in `source`. Use the real panel numbers, not the marketing ones. Generic laptop sizes and monitors have no single maker and leave `source` out; add monitors only as generic sizes. A generic size's `name` and `short` are words, so add their Finnish to `js/fi.js` (`./dev test` says which are missing); model names stay as they are.
 
 ## Versions
 

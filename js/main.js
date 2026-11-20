@@ -1,5 +1,5 @@
 import { initCalibrate } from './calibrate.js';
-import { createMemory, defaultName, matchProfile, signatureOf } from './memory.js';
+import { createMemory, createPrefs, defaultName, matchProfile, signatureOf } from './memory.js';
 import { createSetup } from './setup.js';
 import { initDetails } from './details.js';
 import { initMenu } from './menu.js';
@@ -13,7 +13,9 @@ import { RATIOS } from './screens.js';
 import { SIZE_RATIO_CHOICES, facing } from './compare-options.js';
 import { DEFAULT_PX_PER_MM, round1, usableResolution, yourScreen } from './scale.js';
 import { VERSION } from './version.js';
-import { areaRatio, formatCm } from './geometry.js';
+import { areaRatio } from './geometry.js';
+import { cm, onLangChange, screenName, t } from './i18n.js';
+import { initSettings } from './settings.js';
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -108,7 +110,6 @@ function emitCompare(scale, cal) {
   document.dispatchEvent(new CustomEvent('compare', { detail: { scale, cal } }));
 }
 
-const sizeName = (screen) => screen.short ?? screen.name;
 
 function setView(next) {
   view = next;
@@ -119,7 +120,7 @@ function setView(next) {
 }
 
 // ---- Remembered screens (js/memory.js is the only code that touches storage).
-const REMEMBER_FAILED = "Couldn't remember this screen in this browser.";
+const rememberFailed = () => t("Couldn't remember this screen in this browser.");
 
 function rememberNote(text) {
   ui.rememberedStatus.textContent = text;
@@ -135,7 +136,7 @@ function rememberNow() {
     from: state.from, size: state.size, res: state.res, ratio: state.ratio, cal: state.cal,
   });
   profiles = memory.list();
-  rememberNote(ok ? '' : REMEMBER_FAILED);
+  rememberNote(ok ? '' : rememberFailed());
   return ok;
 }
 
@@ -162,15 +163,16 @@ function writeUrl() {
 
 let factsHtml = '';
 function renderFacts(from, to) {
-  const dims = (x) => `${formatCm(x.widthMm)} × ${formatCm(x.heightMm)}`;
+  const dims = (x) => `${cm(x.widthMm)} × ${cm(x.heightMm)}`;
+  const d = { dims: dims(from), size: +from.diagonalIn.toFixed(2) };
   const yours = from.basis === 'card'
-    ? `Measured with a card: about ${round1(from.diagonalIn)}" (${dims(from)})`
-    : `${from.basis === 'model' ? `${sizeName(from)}: ` : ''}${dims(from)} (${+from.diagonalIn.toFixed(2)}" diagonal, ${from.basis === 'size' ? 'typed size' : 'size of the model'})`;
+    ? t('Measured with a card: about {size}" ({dims})', { ...d, size: round1(from.diagonalIn) })
+    : `${from.basis === 'model' ? `${screenName(from)}: ` : ''}${from.basis === 'size' ? t('{dims} ({size}" diagonal, typed size)', d) : t('{dims} ({size}" diagonal, size of the model)', d)}`;
   const html = `
     <dl class="facts">
-      <dt>Your screen</dt><dd>${yours}</dd>
-      <dt>Compared</dt><dd>${sizeName(to)}: ${dims(to)} (${to.diagonalIn}" diagonal)</dd>
-      <dt>Area</dt><dd>${Math.round(areaRatio(to, from) * 100)} % of yours</dd>
+      <dt>${t('Your screen')}</dt><dd>${yours}</dd>
+      <dt>${t('Compared')}</dt><dd>${screenName(to)}: ${t('{dims} ({size}" diagonal)', { dims: dims(to), size: to.diagonalIn })}</dd>
+      <dt>${t('Area')}</dt><dd>${t('{pct} % of yours', { pct: Math.round(areaRatio(to, from) * 100) })}</dd>
     </dl>`;
   if (html === factsHtml) return;
   factsHtml = html;
@@ -179,7 +181,7 @@ function renderFacts(from, to) {
 
 let overviewKey = '';
 function updateOverview(from, to) {
-  const key = [from.widthMm, from.heightMm, to.name, to.widthMm, to.heightMm].join('|');
+  const key = [from.widthMm, from.heightMm, screenName(to), to.widthMm, to.heightMm].join('|');
   if (key === overviewKey) return;
   overviewKey = key;
   renderOverview(ui.overview, from, to);
@@ -196,11 +198,11 @@ function update() {
   if (!from || !to || view !== 'result') return;
   const scale = from.pxPerMm;
   writeUrl();
-  ui.fromBtn.textContent = sizeName(from);
-  ui.toBtn.textContent = sizeName(to);
+  ui.fromBtn.textContent = screenName(from);
+  ui.toBtn.textContent = screenName(to);
   ui.fill.checked = state.fill;
   ui.tuneDot.hidden = !state.cal;
-  ui.tuneState.textContent = state.cal ? ' (adjusted)' : '';
+  ui.tuneState.textContent = state.cal ? ` ${t('(adjusted)')}` : '';
   renderFacts(from, to);
   updateOverview(from, to);
   details.sync({ basis: from.basis, res: from.res ?? null, edited: state.res, ratio: state.ratio, to: state.to });
@@ -233,7 +235,7 @@ initMenu($('#menu-btn'), $('#options'));
 const details = initDetails(ui.drawer, {
   onRename(sig, name) {
     if (memory.rename(sig, name)) refreshMemory();
-    else rememberNote(REMEMBER_FAILED);
+    else rememberNote(rememberFailed());
   },
   onDelete(sig) {
     memory.remove(sig);
@@ -243,7 +245,7 @@ const details = initDetails(ui.drawer, {
   onClear() {
     memory.clear();
     refreshMemory();
-    rememberNote('Forgot all remembered screens.');
+    rememberNote(t('Forgot all remembered screens.'));
   },
   onChange(patch) {
     if ('res' in patch) {
@@ -269,7 +271,7 @@ const setup = createSetup(ui.setup, {
     state.ratio = ratio ?? null;
     state.to = to;
     // The checkbox: ticked remembers this screen, unticked (when it was remembered) forgets it.
-    if (remember === true) rememberNote(rememberNow() ? '' : REMEMBER_FAILED);
+    if (remember === true) rememberNote(rememberNow() ? '' : rememberFailed());
     else if (remember === false) forgetNow();
     const wasStart = view === 'start';
     applied = true;
@@ -339,7 +341,7 @@ function openDrawer(kind) {
     skipRemember = false;
   }
   drawer.classList.toggle('drawer-tune', tune);
-  ui.drawerHeading.textContent = tune ? 'Check the real size' : 'Details';
+  ui.drawerHeading.textContent = tune ? t('Check the real size') : t('Details');
   ui.panelDetails.hidden = tune;
   ui.panelTune.hidden = !tune;
   drawer.showModal();
@@ -352,7 +354,7 @@ drawer.addEventListener('click', (e) => { if (e.target === drawer) drawer.close(
 drawer.addEventListener('close', () => {
   if (setup.isOpen()) { setup.refocus(); return; }
   if (drawerKind === 'tune' && tuneTouched && !skipRemember && !calRememberRow.hidden) {
-    if (calRemember.checked) { if (!rememberNow()) rememberNote(REMEMBER_FAILED); } else forgetNow();
+    if (calRemember.checked) { if (!rememberNow()) rememberNote(rememberFailed()); } else forgetNow();
     refreshMemory();
   }
   tuneTouched = false;
@@ -405,7 +407,7 @@ function syncChrome() {
   document.body.classList.toggle('is-drawing', drawingOnly);
   ui.drawingBtn.setAttribute('aria-pressed', String(drawingOnly));
   ui.exitView.hidden = !(fs || drawingOnly);
-  ui.exitView.textContent = fs ? 'Exit full screen' : 'Exit drawing only';
+  ui.exitView.textContent = fs ? t('Exit full screen') : t('Exit drawing only');
   if (!fs && !drawingOnly) window.scrollTo(0, 0);
   // Whatever had focus (the toolbar button, or Exit) is hidden now: put focus on what is still there.
   // The page is a result only when it is shown; Start over moves focus itself.
@@ -447,6 +449,18 @@ function startOver() {
   ui.startBtn.focus();
 }
 ui.startOverBtn.addEventListener('click', startOver);
+
+// Theme and language (the footer). A new language redraws every text the scripts made.
+onLangChange(() => {
+  rememberNote('');
+  setup.relabel();
+  update();
+});
+initSettings({
+  themeBtn: $('#theme-btn'),
+  langBtns: [...document.querySelectorAll('#lang button')],
+  prefs: createPrefs(),
+});
 
 setView(view);
 update();
