@@ -5,7 +5,7 @@
 import { SIZE_MAX_IN, SIZE_MIN_IN } from './scale.js';
 import { num, t } from './i18n.js';
 
-const SIZE_STEP_IN = 0.5;
+const FINE_UP_TO_IN = 20;
 const EPS = 1e-9;
 
 /** A number from what was typed: "15,6" and "15.6" both work. Null when it is not a number. Range is not checked. */
@@ -42,13 +42,16 @@ export function stepDirection(key) {
 export const isClearKey = (key) => key === 'c' || key === 'C';
 
 /**
- * The next half inch in the direction `dir` (+1 or -1), clamped to the accepted range. An empty field
- * (`current` null) starts from `start`, so + gives start + 0.5 and - gives start - 0.5.
+ * The next size in the direction `dir` (+1 or -1), clamped to the accepted range: a tenth of an inch up to
+ * 20" (phones, tablets and laptops come in sizes like 6.1, 6.3 and 13.6) and half an inch above (monitors).
+ * An empty field (`current` null) starts from `start`, so + gives 6.2 from 6.1 and 24.5 from 24.
  */
 export function stepSize(current, dir, start = 24) {
   const from = current == null ? start : current;
-  const halves = from / SIZE_STEP_IN;
-  const next = (dir > 0 ? Math.floor(halves + EPS) + 1 : Math.ceil(halves - EPS) - 1) * SIZE_STEP_IN;
+  // In tenths, so the steps stay whole numbers.
+  const unit = (dir > 0 ? from >= FINE_UP_TO_IN : from > FINE_UP_TO_IN) ? 5 : 1;
+  const tenths = (from * 10) / unit;
+  const next = ((dir > 0 ? Math.floor(tenths + EPS) + 1 : Math.ceil(tenths - EPS) - 1) * unit) / 10;
   return Math.min(SIZE_MAX_IN, Math.max(SIZE_MIN_IN, next));
 }
 
