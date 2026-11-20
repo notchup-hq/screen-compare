@@ -16,18 +16,25 @@ test('parseSize accepts a dot or a comma and rejects the rest', () => {
 test('stepSize from an empty field starts at the placeholder, not the minimum', () => {
   assert.equal(stepSize(null, 1), 24.5);
   assert.equal(stepSize(null, -1), 23.5);
-  assert.equal(stepSize(null, 1, 22), 22.5);
-  assert.equal(stepSize(null, -1, 22), 21.5);
+  assert.equal(stepSize(null, 1, 6.1), 6.2);
+  assert.equal(stepSize(null, -1, 6.1), 6);
 });
 
-test('stepSize moves to the next half inch in that direction', () => {
+test('stepSize moves a tenth of an inch up to 20" and half an inch above', () => {
+  assert.equal(stepSize(6.1, 1), 6.2);
+  assert.equal(stepSize(6.9, 1), 7);
+  assert.equal(stepSize(15.6, 1), 15.7);
+  assert.equal(stepSize(15.6, -1), 15.5);
+  assert.equal(stepSize(15.65, 1), 15.7, 'a typed size in between goes to the next tenth');
+  assert.equal(stepSize(15.65, -1), 15.6);
+  assert.equal(stepSize(19.9, 1), 20);
+  assert.equal(stepSize(20, 1), 20.5);
+  assert.equal(stepSize(20.5, -1), 20);
+  assert.equal(stepSize(20, -1), 19.9);
   assert.equal(stepSize(24, 1), 24.5);
   assert.equal(stepSize(24, -1), 23.5);
-  assert.equal(stepSize(15.6, 1), 16);
-  assert.equal(stepSize(15.6, -1), 15.5);
-  assert.equal(stepSize(15.4, -1), 15);
-  assert.equal(stepSize(15.4, 1), 15.5);
   assert.equal(stepSize(21.5, 1), 22);
+  assert.equal(stepSize(21.4, -1), 21);
 });
 
 test('stepSize clamps to 4-100', () => {
@@ -35,10 +42,9 @@ test('stepSize clamps to 4-100', () => {
   assert.equal(stepSize(99.8, 1), 100);
   assert.equal(stepSize(150, -1), 100);
   assert.equal(stepSize(4, -1), 4);
-  assert.equal(stepSize(4.2, -1), 4);
+  assert.equal(stepSize(4.05, -1), 4);
   assert.equal(stepSize(2, 1), 4);
   assert.equal(stepSize(null, -1, 4), 4);
-  assert.equal(stepSize(null, 1, 6.1), 6.5);
 });
 
 test('cleanSizeText keeps digits and one decimal separator only', () => {

@@ -16,6 +16,7 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Changed
 
+- − and + step a tenth of an inch up to 20" (6.1 to 6.2, 13.3 to 13.4) and half an inch for monitors.
 - Full screen is one tap away on a phone: an icon in the toolbar, with Exit full screen in the top corner.
 - The page preloads its scripts, so it starts one network round trip sooner.
 - `AGENTS.md` is a short set of rules; the detailed behaviour of each view lives in `docs/how-it-works.md`, now up to date with phones, tablets, card and ruler.
