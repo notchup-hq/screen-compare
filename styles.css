@@ -47,7 +47,7 @@ body {
   margin: 0;
   min-height: 100dvh;
   display: grid;
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template: minmax(0, 1fr) auto / minmax(0, 1fr); /* the column never grows past the window */
   background: var(--paper);
   color: var(--ink);
   font: 1rem/1.5 var(--font);
@@ -156,7 +156,7 @@ select { width: 100%; }
 .art-label { fill: var(--ink); font: 700 22px/1 var(--font); }
 
 /* 3. Result: toolbar on top, the stage fills the space between it and the footer */
-.result { height: 100dvh; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); }
+.result { height: 100dvh; min-height: 0; display: grid; grid-template: auto minmax(0, 1fr) / minmax(0, 1fr); }
 @media (min-width: 768px) and (min-height: 560px) {
   .result { height: auto; }
 }
@@ -188,15 +188,22 @@ select { width: 100%; }
 /* Options: inline from 768 px (the wrapper steps aside); on smaller screens behind one button. */
 .options { display: contents; }
 .menu-btn { display: none; }
+/* Full screen ends the row of options from 768 px; on a small screen it sits next to the menu. */
+.fs-btn { display: inline-flex; align-items: center; gap: 0.4rem; order: 1; }
+.fs-btn[hidden] { display: none; }
 @media (max-width: 767.98px) {
   .toolbar { flex-wrap: nowrap; gap: 0.5rem; padding-block: 0.4rem; }
   .toolbar .app-name, .toolbar .badge { display: none; }
   .pair { flex: 0 1 auto; flex-wrap: nowrap; min-width: 0; gap: 0.3rem; }
   .pair .screen-btn { flex: 0 1 auto; min-width: 0; padding-inline: 0.5rem; overflow: hidden; text-overflow: ellipsis; }
   .toolbar button { min-height: 44px; }
-  .menu-btn { display: inline-flex; align-items: center; gap: 0.4rem; flex: none; margin-left: auto; }
+  .menu-btn { display: inline-flex; align-items: center; flex: none; margin-left: auto; }
+  .fs-btn { order: 0; flex: none; margin-left: auto; }
+  .fs-btn:not([hidden]) + .menu-btn { margin-left: 0; }
+  .menu-btn, .fs-btn { min-width: 44px; justify-content: center; padding-inline: 0.6rem; }
+  /* Both keep only their icon, so the two screen names have room; the names stay for screen readers. */
+  .menu-label, .fs-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .options { display: none; }
-  .menu-btn { padding-inline: 0.6rem; }
   .options.open {
     position: absolute;
     top: 100%;
@@ -220,11 +227,6 @@ select { width: 100%; }
 /* Touch screens get full-size tap targets in the toolbar, inline or in the menu. */
 @media (pointer: coarse) {
   .toolbar button { min-height: 44px; }
-}
-/* On the narrowest phones the Options button keeps only its icon; its name stays for screen readers. */
-@media (max-width: 400px) {
-  .menu-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
-  .menu-btn { min-width: 44px; justify-content: center; }
 }
 .dot { display: inline-block; width: 0.5rem; height: 0.5rem; margin-left: 0.4rem; border-radius: 50%; background: var(--stage-gold); }
 .switch { display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; cursor: pointer; }
@@ -335,9 +337,11 @@ select { width: 100%; }
 .e-right { right: 14px; top: 50%; transform: translateY(-50%); }
 
 /* Not enough room: say so, show both sizes to scale, offer Full screen */
+/* Never wider or taller than the free space: on a phone the whole card shows without scrolling. */
 .fit-card {
-  max-width: 26rem;
-  margin: 1rem;
+  width: min(26rem, calc(100% - 2rem));
+  max-height: calc(100% - 2rem);
+  overflow: auto;
   padding: 1.25rem 1.5rem;
   text-align: center;
   color: var(--ink);
@@ -353,6 +357,10 @@ select { width: 100%; }
 .note:empty { display: none; }
 
 .exit-fs { position: absolute; z-index: 5; bottom: 0.75rem; right: 0.75rem; }
+/* On a phone the chip fills the bottom; Exit goes top right, where the Full screen icon was. */
+@media (max-width: 767.98px) {
+  .exit-fs { top: 0.5rem; bottom: auto; right: 0.5rem; }
+}
 .is-fullscreen .toolbar, .is-fullscreen .site-footer, .is-drawing .toolbar, .is-drawing .site-footer { display: none; }
 .is-fullscreen .result, .is-drawing .result { grid-template-rows: minmax(0, 1fr); }
 
@@ -567,7 +575,7 @@ legend, .other label { display: block; padding: 0; margin-bottom: 0.35rem; font-
 
 /* Overview */
 .overview { margin: 0.75rem 0 0; }
-.overview svg { display: block; width: 100%; max-width: 300px; height: auto; }
+.overview svg { display: block; max-width: 100%; height: auto; max-height: 28dvh; }
 .ov-from { fill: none; stroke: var(--muted); stroke-width: 1.5; }
 .ov-to { fill: var(--gauge-soft); stroke: var(--gauge); stroke-width: 1.5; fill-opacity: 0.7; }
 .legend { margin: 0.4rem 0 0; font-size: 0.85rem; color: var(--muted); }
