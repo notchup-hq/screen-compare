@@ -5,6 +5,7 @@
 
 import { RATIO_CHOICES, SIZE_RATIO_CHOICES, laptopSizeFor, laptopSpec } from './compare-options.js';
 import { usableResolution } from './scale.js';
+import { getLang, t } from './i18n.js';
 
 function ratioChoice(name, value, label) {
   const l = document.createElement('label');
@@ -83,13 +84,13 @@ export function initDetails(root, { onChange, onRename, onDelete, onClear }) {
     const id = `remembered-name-${i}`;
     const label = document.createElement('label');
     label.htmlFor = id;
-    label.textContent = 'Name';
+    label.textContent = t('Name');
     const input = document.createElement('input');
     input.type = 'text';
     input.id = id;
     input.maxLength = 40; // the same limit as NAME_MAX in js/memory.js, which cleans the name again
     input.value = p.name;
-    input.setAttribute('aria-label', `Name of remembered screen ${i + 1}`);
+    input.setAttribute('aria-label', t('Name of remembered screen {n}', { n: i + 1 }));
     input.autocomplete = 'off';
     input.addEventListener('change', () => {
       if (input.value.trim()) onRename(p.sig, input.value);
@@ -97,8 +98,8 @@ export function initDetails(root, { onChange, onRename, onDelete, onClear }) {
     });
     const del = document.createElement('button');
     del.type = 'button';
-    del.textContent = 'Delete';
-    del.setAttribute('aria-label', `Delete ${p.name}`);
+    del.textContent = t('Delete');
+    del.setAttribute('aria-label', t('Delete {name}', { name: p.name }));
     del.addEventListener('click', () => {
       // Keep keyboard focus in the list: the next row, else the one before, else "Forget all".
       const rows = [...memList.children];
@@ -112,7 +113,7 @@ export function initDetails(root, { onChange, onRename, onDelete, onClear }) {
     if (isThis) {
       const here = document.createElement('span');
       here.className = 'here';
-      here.textContent = 'This screen';
+      here.textContent = t('This screen');
       li.append(here);
     }
     li.append(del);
@@ -126,7 +127,7 @@ export function initDetails(root, { onChange, onRename, onDelete, onClear }) {
       memSection.hidden = !available;
       if (!available) return;
       const same = (a, b) => a.w === b.w && a.h === b.h && Math.abs(a.dpr - b.dpr) <= 0.01;
-      const key = JSON.stringify([profiles.map((p) => [p.sig, p.name]), currentSig]);
+      const key = JSON.stringify([profiles.map((p) => [p.sig, p.name]), currentSig, getLang()]);
       memEmpty.hidden = profiles.length > 0;
       memClear.hidden = profiles.length === 0;
       if (key === memKey) return;
@@ -144,8 +145,8 @@ export function initDetails(root, { onChange, onRename, onDelete, onClear }) {
       resRow.hidden = !typed;
       if (!typed) { resFields.hidden = true; resEdit.setAttribute('aria-expanded', 'false'); }
       resText.textContent = res
-        ? `Resolution: ${res[0]} × ${res[1]} pixels${edited ? '' : ' (detected)'}`
-        : 'Resolution: not available';
+        ? (edited ? t('Resolution: {w} × {h} pixels', { w: res[0], h: res[1] }) : t('Resolution: {w} × {h} pixels (detected)', { w: res[0], h: res[1] }))
+        : t('Resolution: not available');
       if (!resFields.contains(document.activeElement)) {
         resW.value = edited ? edited[0] : '';
         resH.value = edited ? edited[1] : '';

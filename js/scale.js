@@ -8,6 +8,7 @@
 //   CSS px per cm  = ppi / devicePixelRatio / 2.54
 
 import { MM_PER_INCH, pxPerMm, sizeFromDiagonal } from './geometry.js';
+import { t } from './i18n.js';
 
 /** Aspect ratios (long / short) a real panel can have; anything else is not a usable resolution. */
 const MIN_RATIO = 1;
@@ -55,7 +56,7 @@ export function yourScreen({ preset = null, sizeIn = null, res = null, ratio = n
     const d = round1(diagonalIn);
     return {
       basis: 'card', pxPerMm: cal, widthMm, heightMm, diagonalIn,
-      ratio: widthMm / heightMm, id: 'card', name: `Your screen, about ${d}"`, short: `Your ${d}" screen`,
+      ratio: widthMm / heightMm, id: 'card', name: t('Your screen, about {size}"', { size: d }), short: t('Your {size}" screen', { size: d }),
     };
   }
 
@@ -80,8 +81,8 @@ function upright(you, css) {
 function sizedScreen({ sizeIn, res, ratio, css, dpr }) {
   const edited = res && usableResolution(res[0], res[1]) ? res : null;
   const native = css.width > 0 && css.height > 0 ? [Math.round(css.width * dpr), Math.round(css.height * dpr)] : null;
-  const label = `${sizeIn}"`;
-  const base = { basis: 'size', id: `size-${sizeIn}`, name: `${label} screen`, short: `${label} screen`, diagonalIn: sizeIn, custom: true };
+  const label = t('{size}" screen', { size: sizeIn });
+  const base = { basis: 'size', id: `size-${sizeIn}`, name: label, short: label, diagonalIn: sizeIn, custom: true };
   if (edited) {
     // An edited resolution is native pixels, so the device pixel ratio matters here.
     const [long, short] = edited[0] >= edited[1] ? edited : [edited[1], edited[0]];

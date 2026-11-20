@@ -3,21 +3,22 @@
 
 import { BANK_CARD_MM } from './screens.js';
 import { round1, yourScreen } from './scale.js';
+import { onLangChange, t } from './i18n.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 const CARD_RADIUS_MM = 3.18; // ISO/IEC 7810 ID-1 corner radius
 
 /** Ruler scales: the unit in mm, how many units to draw (longest that fits first), ticks per unit. */
 const RULERS = {
-  cm: { unitMm: 10, counts: [10, 5, 3], ticks: 10, name: 'cm' },
-  in: { unitMm: 25.4, counts: [4, 2, 1], ticks: 8, name: 'inches' },
+  cm: { unitMm: 10, counts: [10, 5, 3], ticks: 10 },
+  in: { unitMm: 25.4, counts: [4, 2, 1], ticks: 8 },
 };
 
 const HOW = {
-  card: 'Lay a card on the outline and slide until they match.',
-  upright: 'Lay a card upright on the outline and slide until they match.',
-  cut: 'Lay a card upright on the outline, its top at the top, and slide until the bottom edges match.',
-  ruler: 'Lay a ruler with its 0 on the first mark and slide until the marks line up.',
+  card: () => t('Lay a card on the outline and slide until they match.'),
+  upright: () => t('Lay a card upright on the outline and slide until they match.'),
+  cut: () => t('Lay a card upright on the outline, its top at the top, and slide until the bottom edges match.'),
+  ruler: () => t('Lay a ruler with its 0 on the first mark and slide until the marks line up.'),
 };
 
 /** One tap of − or +, in CSS px per mm (under 1 px on a card). */
@@ -54,7 +55,7 @@ export function initCalibrate(onChange, onDone) {
         <label><input type="radio" name="cal-with" value="in"> A ruler in inches</label>
       </fieldset>
       <label class="remember" id="cal-remember-row"><input type="checkbox" id="cal-remember"> <span>Remember this screen on this browser</span></label>
-      <p class="cal-note" id="cal-note">Any bank, ID, driving licence, loyalty or library card works: they are all ${BANK_CARD_MM.width} × ${BANK_CARD_MM.height} mm (ISO/IEC 7810 ID-1).</p>
+      <p class="cal-note" id="cal-note"></p>
       <p>This adjusts the scale so the outline is truly real size on this screen.</p>
       <button type="button" id="cal-reset">Reset fine-tune</button>
     </details>`;
@@ -103,21 +104,30 @@ export function initCalibrate(onChange, onDone) {
       card.style.borderRadius = `${CARD_RADIUS_MM * scale}px`;
       drawer?.style.setProperty('--card-w', `${Math.min(fit.width, fit.room)}px`);
       // One line says how to lay the card: flat, upright, or upright and cut on a screen narrower than a card.
-      how.textContent = fit.layout === 'flat' ? HOW.card : HOW[fit.layout];
-      drawn = `Card drawn ${Math.round(BANK_CARD_MM.width * scale)} pixels wide`;
+      how.textContent = (fit.layout === 'flat' ? HOW.card : HOW[fit.layout])();
+      drawn = t('Card drawn {px} pixels wide', { px: Math.round(BANK_CARD_MM.width * scale) });
     } else {
       const fit = rulerFit(scale, room, mode);
       drawRuler(ruler, scale, fit);
       drawer?.style.setProperty('--card-w', `${Math.min(fit.px + RULER_PAD * 2, room)}px`);
-      how.textContent = HOW.ruler;
-      drawn = `${fit.count} ${RULERS[mode].name} drawn ${Math.round(fit.px)} pixels long`;
+      how.textContent = HOW.ruler();
+      const long = { count: fit.count, px: Math.round(fit.px) };
+      drawn = mode === 'cm' ? t('{count} cm drawn {px} pixels long', long) : t('{count} inches drawn {px} pixels long', long);
     }
     // The screen size this scale implies (the same maths as a card measurement everywhere else).
     const you = yourScreen({ cal: scale, css: { width: window.screen.width, height: window.screen.height }, dpr: window.devicePixelRatio || 1 });
     const inches = you ? round1(you.diagonalIn) : null;
-    size.textContent = inches ? `Your screen is about ${inches}"` : '';
-    range.setAttribute('aria-valuetext', `${drawn}${inches ? `, your screen about ${inches} inches` : ''}`);
+    size.textContent = inches ? t('Your screen is about {size}"', { size: inches }) : '';
+    range.setAttribute('aria-valuetext', inches ? t('{drawn}, your screen about {size} inches', { drawn, size: inches }) : drawn);
   }
+
+  function relabel() {
+    note.textContent = t('Any bank, ID, driving licence, loyalty or library card works: they are all {w} × {h} mm (ISO/IEC 7810 ID-1).', { w: BANK_CARD_MM.width, h: BANK_CARD_MM.height });
+    drawnKey = '';
+    draw();
+  }
+  relabel();
+  onLangChange(relabel);
 
   body.querySelector('.cal-with').addEventListener('change', (e) => {
     mode = e.target.value;
@@ -187,9 +197,9 @@ function drawRuler(svg, scale, { unit, count, px }) {
     if (whole) {
       // The last number carries the unit and ends at its tick, so it is never cut off on the right.
       const last = i === count * r.ticks;
-      const t = svgEl('text', { x, y: 40, 'text-anchor': last ? 'end' : 'middle', class: 'ruler-num' });
-      t.textContent = last ? `${count} ${unit}` : String(i / r.ticks);
-      parts.push(t);
+      const label = svgEl('text', { x, y: 40, 'text-anchor': last ? 'end' : 'middle', class: 'ruler-num' });
+      label.textContent = last ? `${count} ${unit === 'in' ? t('in') : unit}` : String(i / r.ticks);
+      parts.push(label);
     }
   }
   svg.replaceChildren(...parts);

@@ -3,6 +3,7 @@
 // empty field never counts as a value, but stepping from empty starts at the placeholder's number.
 
 import { SIZE_MAX_IN, SIZE_MIN_IN } from './scale.js';
+import { num, t } from './i18n.js';
 
 const SIZE_STEP_IN = 0.5;
 const EPS = 1e-9;
@@ -78,11 +79,11 @@ export function sizeStepper(input, minus, plus, { start = 24 } = {}) {
       input.removeAttribute('aria-valuetext');
     } else {
       input.setAttribute('aria-valuenow', String(n));
-      input.setAttribute('aria-valuetext', `${n} inches`);
+      input.setAttribute('aria-valuetext', t('{n} inches', { n }));
     }
   };
   const step = (dir) => {
-    input.value = String(stepSize(parseSize(input.value), dir, start));
+    input.value = num(stepSize(parseSize(input.value), dir, start));
     input.dispatchEvent(new Event('input', { bubbles: true }));
   };
   input.setAttribute('aria-valuemin', String(SIZE_MIN_IN));

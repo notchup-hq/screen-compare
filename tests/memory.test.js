@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  MAX_PROFILES, STORAGE_KEY, cleanName, cleanProfile, cleanProfiles, createMemory, defaultName, matchProfile, rememberedLine, signatureOf, upsertProfile,
+  MAX_PROFILES, PREFS_KEY, STORAGE_KEY, cleanName, cleanPrefs, createPrefs, cleanProfile, cleanProfiles, createMemory, defaultName, matchProfile, rememberedLine, signatureOf, upsertProfile,
 } from '../js/memory.js';
 
 const sig = (w, h, dpr = 1) => ({ w, h, dpr });
@@ -194,4 +194,26 @@ test('forget with blocked storage takes nothing and does not throw', () => {
   assert.equal(mem.take(office.sig), null);
   const full = { ...fakeStorage({ [STORAGE_KEY]: JSON.stringify({ v: 1, profiles: [office] }) }), removeItem() { throw new Error('denied'); }, setItem() { throw new Error('denied'); } };
   assert.equal(createMemory(() => full).take(office.sig), null, 'a failed write does not pretend it forgot');
+});
+
+test('settings: only a picked theme or language is stored, and picking the default forgets it', () => {
+  const s = fakeStorage();
+  const prefs = createPrefs(() => s);
+  assert.deepEqual(prefs.read(), {});
+  assert.equal(prefs.set({ theme: 'dark' }), true);
+  assert.equal(prefs.set({ lang: 'fi' }), true);
+  assert.deepEqual(prefs.read(), { theme: 'dark', lang: 'fi' });
+  prefs.set({ theme: null });
+  assert.deepEqual(prefs.read(), { lang: 'fi' });
+  prefs.set({ lang: null });
+  assert.equal(s.m.has(PREFS_KEY), false, 'no settings left: the key is removed');
+});
+
+test('settings: unknown or edited values are dropped, and blocked storage reads as no settings', () => {
+  assert.deepEqual(cleanPrefs({ v: 1, theme: 'pink', lang: 'sv', extra: 1 }), {});
+  assert.deepEqual(cleanPrefs({ v: 2, theme: 'dark' }), {}, 'another version is not read');
+  assert.deepEqual(createPrefs(() => fakeStorage({ [PREFS_KEY]: '{not json' })).read(), {});
+  const blocked = createPrefs(() => { throw new Error('SecurityError'); });
+  assert.deepEqual(blocked.read(), {});
+  assert.equal(blocked.set({ theme: 'dark' }), false);
 });

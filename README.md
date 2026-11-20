@@ -18,7 +18,7 @@ I needed to know how much smaller a 14 inch laptop screen would look next to my 
 2. Pick the screen to compare with: sizes of your own kind (phones, tablets, laptops or monitors; "Show all sizes" for the rest), any other size or a specific laptop or phone model. Smaller and bigger screens both work.
 3. A gold outline shows it at real size, with its width and height. Hold a ruler to the screen to check, or fine-tune with a card or a ruler. It works on phones and tablets too.
 
-Everything runs in your browser. No cookies, no tracking. Your screens are remembered in this browser only if you ask, and never leave it. A comparison lives in the page's link, so you can share it.
+Everything runs in your browser. No cookies, no tracking. Your screens are remembered in this browser only if you ask, and never leave it; so are a dark or light theme and the language (English or Finnish) you pick. A comparison lives in the page's link, so you can share it.
 
 ## Run it locally
 

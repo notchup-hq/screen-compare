@@ -1,7 +1,8 @@
-// Remembered screens: the only code in the page that touches browser storage. Nothing is stored until
-// the visitor ticks "Remember this screen on this browser"; nothing else is ever stored and nothing is
-// sent anywhere. One versioned key holds up to five profiles. Every access is wrapped in try/catch, so
-// the page works the same when storage is blocked, full or empty (a private window).
+// Remembered screens and settings: the only code in the page that touches browser storage. A screen is
+// stored only when the visitor ticks "Remember this screen on this browser", and a setting only when
+// they pick a theme or a language other than the default; nothing else is ever stored and nothing is
+// sent anywhere. One versioned key holds up to five profiles, another the two settings. Every access is
+// wrapped in try/catch, so the page works the same when storage is blocked, full or empty (a private window).
 //
 // A profile is { name, sig: { w, h, dpr }, saved, from | size (+ res | ratio) | cal }: the same way of
 // knowing your screen the link uses, plus the screen signature that says which screen it was made on.
@@ -10,8 +11,10 @@
 
 import { round1 } from './scale.js';
 import { parseState, serializeState } from './state.js';
+import { date, t } from './i18n.js';
 
 export const STORAGE_KEY = 'screen-compare:v1';
+export const PREFS_KEY = 'screen-compare:prefs';
 export const MAX_PROFILES = 5;
 const NAME_MAX = 40;
 const DPR_TOLERANCE = 0.01;
@@ -32,8 +35,6 @@ export function matchProfile(profiles, sig) {
   return best;
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
 /**
  * The quiet line under a remembered screen: when it was saved, or, after twelve months, a nudge to
  * check it. `saved` and `now` are milliseconds.
@@ -42,9 +43,9 @@ export function rememberedLine(saved, now = Date.now()) {
   const d = new Date(saved);
   const expires = new Date(saved);
   expires.setFullYear(expires.getFullYear() + 1);
-  if (!Number.isFinite(d.getTime())) return 'Remembered on this browser';
-  if (expires.getTime() < now) return 'Remembered on this browser over a year ago, still right?';
-  return `Remembered on this browser, ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+  if (!Number.isFinite(d.getTime())) return t('Remembered on this browser');
+  if (expires.getTime() < now) return t('Remembered on this browser over a year ago, still right?');
+  return t('Remembered on this browser, {date}', { date: date(d) });
 }
 
 /** A name from what the visitor typed: trimmed and cut to NAME_MAX; empty gives null. */
@@ -56,7 +57,7 @@ export function cleanName(name) {
 /** The default name of a screen (from `yourScreen`): the model's short name, or its size. */
 export function defaultName(screen) {
   if (screen.basis === 'model') return screen.short ?? screen.name;
-  return `${round1(screen.diagonalIn)}" screen`;
+  return t('{size}" screen', { size: round1(screen.diagonalIn) });
 }
 
 /**
@@ -109,11 +110,16 @@ export function upsertProfile(profiles, profile) {
   return [next, ...rest].sort((a, b) => b.saved - a.saved).slice(0, MAX_PROFILES);
 }
 
+const browserStorage = () => window.localStorage;
+
+/** The storage, or null when reading it throws (blocked storage). */
+const storeOf = (getStorage) => () => {
+  try { return getStorage() ?? null; } catch { return null; }
+};
+
 /** @param {() => Storage} getStorage the storage to use; reading it may throw (blocked storage). */
-export function createMemory(getStorage = () => window.localStorage) {
-  const store = () => {
-    try { return getStorage() ?? null; } catch { return null; }
-  };
+export function createMemory(getStorage = browserStorage) {
+  const store = storeOf(getStorage);
 
   /** Can the page read its storage at all? Only the real key is touched. */
   function available() {
@@ -174,6 +180,47 @@ export function createMemory(getStorage = () => window.localStorage) {
     },
     clear() {
       return write([]);
+    },
+  };
+}
+
+const PREF_VALUES = { theme: ['light', 'dark'], lang: ['fi', 'en'] };
+
+/** Only known settings with known values survive; anything else in storage is dropped. */
+export function cleanPrefs(raw) {
+  const out = {};
+  if (!raw || typeof raw !== 'object' || raw.v !== 1) return out;
+  for (const [k, values] of Object.entries(PREF_VALUES)) if (values.includes(raw[k])) out[k] = raw[k];
+  return out;
+}
+
+/**
+ * The theme and language the visitor picked: { theme?: 'light' | 'dark', lang?: 'fi' | 'en' }. A
+ * setting set to null is removed (back to the default); with none left, the key is removed too.
+ * @param {() => Storage} getStorage as for createMemory
+ */
+export function createPrefs(getStorage = browserStorage) {
+  const store = storeOf(getStorage);
+  function read() {
+    const s = store();
+    if (!s) return {};
+    try { return cleanPrefs(JSON.parse(s.getItem(PREFS_KEY))); } catch { return {}; }
+  }
+  return {
+    read,
+    /** Change some settings; true when it was stored. */
+    set(patch) {
+      const s = store();
+      if (!s) return false;
+      const next = cleanPrefs({ ...read(), ...patch, v: 1 });
+      for (const [k, v] of Object.entries(patch)) if (v === null) delete next[k];
+      try {
+        if (Object.keys(next).length) s.setItem(PREFS_KEY, JSON.stringify({ v: 1, ...next }));
+        else s.removeItem(PREFS_KEY);
+        return true;
+      } catch {
+        return false;
+      }
     },
   };
 }

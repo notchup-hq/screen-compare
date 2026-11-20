@@ -4,8 +4,9 @@
 // The outline is never drawn overflowing: when it does not fit the free space the stage
 // shows a card that offers Full screen instead.
 
-import { fitsBox, fitsInside, formatCm, overflowPerSide } from './geometry.js';
+import { fitsBox, fitsInside, overflowPerSide } from './geometry.js';
 import { sizeLabel } from './suggest.js';
+import { cm, getLang, num, screenName, t } from './i18n.js';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -29,20 +30,20 @@ function sampleDesktop(screen, pxPerMm) {
   el.style.height = `${lh}px`;
   el.style.transform = `scale(${k})`;
   el.innerHTML = `
-    <div class="d-menubar"><b>Files</b><span>Edit</span><span>View</span><span>Window</span><span class="d-grow"></span><span>Tue 9:41</span></div>
+    <div class="d-menubar"><b>${t('Files')}</b><span>${t('Edit')}</span><span>${t('View')}</span><span>${t('Window')}</span><span class="d-grow"></span><span>${t('Tue 9:41')}</span></div>
     <div class="d-win d-doc">
-      <div class="d-title">Quarterly notes</div>
+      <div class="d-title">${t('Quarterly notes')}</div>
       <div class="d-body">
-        <h3>Quarterly notes</h3>
-        <p>Text and controls are drawn at ${lw} × ${lh} points, the default scaling for this screen. The more of this you can read comfortably, the more room you have to work.</p>
-        <p>Resize the comparison to see how many lines of a document fit before you have to scroll, and how wide a window can be before it feels crowded.</p>
-        <p>This is only a sample: real apps add toolbars and sidebars that use even more of the space.</p>
+        <h3>${t('Quarterly notes')}</h3>
+        <p>${t('Text and controls are drawn at {w} × {h} points, the default scaling for this screen. The more of this you can read comfortably, the more room you have to work.', { w: lw, h: lh })}</p>
+        <p>${t('Resize the comparison to see how many lines of a document fit before you have to scroll, and how wide a window can be before it feels crowded.')}</p>
+        <p>${t('This is only a sample: real apps add toolbars and sidebars that use even more of the space.')}</p>
       </div>
     </div>
     <div class="d-win d-web">
-      <div class="d-title">Planning board</div>
+      <div class="d-title">${t('Planning board')}</div>
       <div class="d-body">
-        <div class="d-tabs"><span class="on">Overview</span><span>Schedule</span><span>Budget</span></div>
+        <div class="d-tabs"><span class="on">${t('Overview')}</span><span>${t('Schedule')}</span><span>${t('Budget')}</span></div>
         <p class="d-bar" style="width: 80%"></p><p class="d-bar" style="width: 64%"></p><p class="d-bar" style="width: 72%"></p>
         <div class="d-chart"><i style="height: 40%"></i><i style="height: 65%"></i><i style="height: 50%"></i><i style="height: 85%"></i><i style="height: 60%"></i></div>
       </div>
@@ -65,15 +66,18 @@ function dimension(className, text) {
 }
 
 /** "1.9 cm past each side", "0.4 cm short of each side", or '' when the sizes match. */
-function reach(mm, where, past = 'past', short = 'short of') {
+function reach(mm, past, short) {
   if (Math.abs(mm) < 1) return '';
-  return mm > 0 ? `${formatCm(mm)} ${past} ${where}` : `${formatCm(-mm)} ${short} ${where}`;
+  return mm > 0 ? past({ len: cm(mm) }) : short({ len: cm(-mm) });
 }
 
 function reachSentence(to, from) {
   const o = overflowPerSide(to, from);
-  const parts = [reach(o.sideMm, 'each side'), reach(o.topMm, 'the top and bottom')].filter(Boolean);
-  return parts.length ? `reaches ${parts.join(' and ')}` : 'is the same size as your screen';
+  const parts = [
+    reach(o.sideMm, (v) => t('{len} past each side', v), (v) => t('{len} short of each side', v)),
+    reach(o.topMm, (v) => t('{len} past the top and bottom', v), (v) => t('{len} short of the top and bottom', v)),
+  ].filter(Boolean);
+  return parts.length ? t('reaches {parts}', { parts: parts.join(t(' and ')) }) : t('is the same size as your screen');
 }
 
 const reduced = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -85,8 +89,8 @@ let lastLive = '';
 
 function chipText(from, to, pct) {
   return pct === 100 && Math.abs(to.widthMm - from.widthMm) < 1 && Math.abs(to.heightMm - from.heightMm) < 1
-    ? `${sizeLabel(to)} is the same size as your screen`
-    : `${sizeLabel(to)} is ${pct} % of your screen's area`;
+    ? t('{size} is the same size as your screen', { size: num(sizeLabel(to)) })
+    : t("{size} is {pct} % of your screen's area", { size: num(sizeLabel(to)), pct });
 }
 
 /** The area chip with the accuracy line under it. "Check with a card" whenever the size is not measured with one. */
@@ -97,14 +101,13 @@ function chipStack(from, to, pct, { accuracy, accuracyLabel, onCheckCard }) {
   const line = el('p', `accuracy acc-${accuracy}`);
   line.append(el('span', '', accuracyLabel));
   if (accuracy !== 'card') {
-    const b = el('button', 'link-btn', 'Check with a card');
+    const b = el('button', 'link-btn', t('Check with a card'));
     b.type = 'button';
     b.addEventListener('click', onCheckCard);
     line.append(' ', b);
   }
   // Names both screens where the toolbar that normally does is hidden (full screen, Drawing only; see the CSS).
-  const named = (s) => s.short ?? s.name;
-  const context = el('p', 'chip-context', `${named(to)} vs ${named(from)}`);
+  const context = el('p', 'chip-context', t('{to} vs {from}', { to: screenName(to), from: screenName(from) }));
   context.setAttribute('aria-hidden', 'true');
   stack.append(chip, context, line);
   return stack;
@@ -122,12 +125,12 @@ function card({ title, text, from, to, canFullscreen, onFullscreen, inFullscreen
   c.append(ov);
   if (!inFullscreen) {
     if (canFullscreen) {
-      const b = el('button', 'primary', 'Full screen');
+      const b = el('button', 'primary', t('Full screen'));
       b.type = 'button';
       b.addEventListener('click', onFullscreen);
       c.append(b);
     } else {
-      c.append(el('p', 'note', 'This browser cannot go full screen. Make the window as large as you can, or use a bigger screen.'));
+      c.append(el('p', 'note', t('This browser cannot go full screen. Make the window as large as you can, or use a bigger screen.')));
     }
   }
   return c;
@@ -146,7 +149,7 @@ export function draw(args) {
   // to show: do the work (a full rebuild of the stage) only when something it draws has changed.
   const drawn = JSON.stringify([
     from.id, from.widthMm, from.heightMm, to.id, to.widthMm, to.heightMm, scale, fill, pct,
-    args.accuracy, args.accuracyLabel, args.canFullscreen, sw, sh, full,
+    args.accuracy, args.accuracyLabel, args.canFullscreen, sw, sh, full, getLang(),
   ]);
   if (drawn === lastDrawn && stage.firstElementChild) return;
   lastDrawn = drawn;
@@ -158,7 +161,7 @@ export function draw(args) {
   const changed = lastScreens !== undefined && screens !== lastScreens;
   lastScreens = screens;
 
-  const live = chipText(from, to, pct) + (fits ? '' : `, and it ${reachSentence(to, from)}`);
+  const live = chipText(from, to, pct) + (fits ? '' : t(', and it {reach}', { reach: reachSentence(to, from) }));
   const liveEl = document.getElementById('live');
   if (live !== lastLive) { lastLive = live; liveEl.textContent = live; }
 
@@ -173,8 +176,8 @@ export function draw(args) {
     // Your own screen's edges only show when the window is the whole screen.
     stage.append(card({
       ...cardArgs,
-      title: 'Bigger than your screen',
-      text: `At true size ${sizeLabel(to)} ${reachSentence(to, from)}. Full screen shows your screen's edges and how far it goes.`,
+      title: t('Bigger than your screen'),
+      text: t("At true size {size} {reach}. Full screen shows your screen's edges and how far it goes.", { size: num(sizeLabel(to)), reach: reachSentence(to, from) }),
     }));
     return;
   }
@@ -184,11 +187,11 @@ export function draw(args) {
   }
   if (!roomy && !tight) {
     // scale is px per mm, so px / scale is mm
-    const free = `${formatCm((sw - MARGIN * 2) / scale)} × ${formatCm((sh - MARGIN * 2) / scale)}`;
+    const free = `${cm((sw - MARGIN * 2) / scale)} × ${cm((sh - MARGIN * 2) / scale)}`;
     stage.append(card({
       ...cardArgs,
-      title: 'Not enough room in this window',
-      text: `At true size it needs ${formatCm(to.widthMm)} × ${formatCm(to.heightMm)}. This window has room for about ${free}.`,
+      title: t('Not enough room in this window'),
+      text: t('At true size it needs {need}. This window has room for about {free}.', { need: `${cm(to.widthMm)} × ${cm(to.heightMm)}`, free }),
     }));
     return;
   }
@@ -199,7 +202,7 @@ export function draw(args) {
   frame.style.height = `${th}px`;
   const outline = el('div', 'outline target');
   if (fill) outline.append(sampleDesktop(to, scale));
-  frame.append(outline, dimension('dim-w', formatCm(to.widthMm)), dimension('dim-h', formatCm(to.heightMm)), chipStack(from, to, pct, args));
+  frame.append(outline, dimension('dim-w', cm(to.widthMm)), dimension('dim-h', cm(to.heightMm)), chipStack(from, to, pct, args));
   stage.append(frame);
 }
 
@@ -211,7 +214,7 @@ function drawEdges(stage, from, to, tw, th, fill, scale, pct, args) {
   outline.style.width = `${tw}px`;
   outline.style.height = `${th}px`;
   if (fill) outline.append(sampleDesktop(to, scale));
-  const label = (cls, mm) => el('span', `edge ${cls}`, mm > 0 ? `reaches ${formatCm(mm)} past this edge` : `${formatCm(Math.abs(mm))} inside this edge`);
+  const label = (cls, mm) => el('span', `edge ${cls}`, mm > 0 ? t('reaches {len} past this edge', { len: cm(mm) }) : t('{len} inside this edge', { len: cm(Math.abs(mm)) }));
   stage.append(
     outline,
     label('e-top', o.topMm), label('e-bottom', o.topMm), label('e-left', o.sideMm), label('e-right', o.sideMm),
@@ -235,7 +238,7 @@ export function renderOverview(host, from, to) {
   svg.setAttribute('width', Math.round(W));
   svg.setAttribute('height', Math.round(H));
   svg.setAttribute('role', 'img');
-  svg.setAttribute('aria-label', `Both screens to scale, centred: your screen ${formatCm(from.widthMm)} wide and ${to.name} ${formatCm(to.widthMm)} wide.`);
+  svg.setAttribute('aria-label', t('Both screens to scale, centred: your screen {from} wide and {name} {to} wide.', { from: cm(from.widthMm), name: screenName(to), to: cm(to.widthMm) }));
 
   const rect = (screen, cls) => {
     const r = document.createElementNS(SVG_NS, 'rect');
@@ -254,10 +257,10 @@ export function renderOverview(host, from, to) {
   svg.append(rect(bigger ? to : from, bigger ? 'ov-to' : 'ov-from'));
   svg.append(rect(bigger ? from : to, bigger ? 'ov-from' : 'ov-to'));
 
-  const title = el('h4', 'ov-title', 'Scaled comparison (not real size)');
+  const title = el('h4', 'ov-title', t('Scaled comparison (not real size)'));
   const caption = document.createElement('p');
   caption.className = 'legend';
-  caption.innerHTML = '<span class="key key-from"></span>Your screen <span class="key key-to"></span>Compared screen (same scale for both)';
+  caption.append(el('span', 'key key-from'), `${t('Your screen')} `, el('span', 'key key-to'), t('Compared screen (same scale for both)'));
   host.replaceChildren(title, svg, caption);
 }
 
