@@ -17,6 +17,7 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Changed
 
+- README: a "Name and logo" section says forks need their own name and branding and are not Notchup's responsibility.
 - − and + step a tenth of an inch up to 20" (6.1 to 6.2, 13.3 to 13.4) and half an inch for monitors.
 - Full screen is one tap away on a phone: an icon in the toolbar, with Exit full screen in the top corner.
 - The page preloads its scripts, so it starts one network round trip sooner.
