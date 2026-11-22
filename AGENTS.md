@@ -15,7 +15,7 @@ A static page that draws a laptop, phone or monitor at its real physical size on
 
 ## Workflow
 
-- Branch (`feat/...`, `fix/...`), draft PR, merge when tested. Never commit to `main`; never push, tag or open a PR unless asked.
+- Branch (`feat/...`, `fix/...`), draft PR, merge when tested. Before a PR, run the review loop in [docs/review.md](docs/review.md) (Claude Code: `/review-loop`). Never commit to `main`; never push, tag or open a PR unless asked.
 - Commits: Conventional Commits (`feat: add tablet sizes`), imperative, 72 characters or fewer, then a short `- ` bullet body on what and why. One logical change per commit, no WIP or fixup commits. Tidy a branch with `git reset --soft` before its first push.
 - Author: the owner's GitHub no-reply address from git config; never change `user.email`. No AI attribution lines in commits or PRs (switched off in `.claude/settings.json`).
 - No secrets, Cloudflare IDs or tokens in the repo, and nothing about anyone's machine.
