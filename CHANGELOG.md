@@ -6,6 +6,7 @@ All notable changes to this project are listed here, newest first. The format fo
 
 ### Added
 
+- The page source carries `<meta name="build" content="abc1234 2026-11-22">`: the short commit and date of the deploy, stamped by Cloudflare Pages' build command (`scripts/stamp-build.mjs`). Locally it says `dev`.
 - Dark and light mode: a moon or sun button in the footer. The page still follows the system until you pick, and switching back to the system's choice follows it again.
 - Finnish: EN | FI in the footer switches every text, with Finnish number formats (13,3"). English stays the default.
 - Both choices are remembered in this browser, the same way as remembered screens (no cookies).

@@ -128,6 +128,6 @@ The version lives in one place, `js/version.js`, and must match the newest headi
 
 ## Deploy
 
-Deployed through Cloudflare's dashboard Git integration: every merge to `main` deploys, and pull requests get preview URLs. There is no build command and the output directory is `/`. The repo holds no Cloudflare config, IDs or tokens.
+Deployed through Cloudflare's dashboard Git integration: every merge to `main` deploys, and pull requests get preview URLs. The build command is `node scripts/stamp-build.mjs` and the output directory is `/`. The script turns `<meta name="build" content="dev">` in `index.html` into the short commit and the date (for example `abc1234 2026-11-22`, visible in View source), reading `CF_PAGES_COMMIT_SHA`; without it, and locally, the page keeps `dev`. The repo holds no Cloudflare config, IDs or tokens.
 
 Keep Cloudflare Web Analytics **off** for this project: it injects a third-party script and would break the no-tracking promise.
